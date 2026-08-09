@@ -1,0 +1,6 @@
+{
+  "name": "Contact Me PWA",
+  "description": "A modern, mobile-first PWA digital contact card to easily share communication channels.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
