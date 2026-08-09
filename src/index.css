@@ -16,10 +16,32 @@
   }
 }
 
+/* Global Scrollbar Hiding */
+html, body, * {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 @layer base {
   body {
     @apply antialiased text-gray-900 bg-white;
     font-family: "Battambang", sans-serif;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 

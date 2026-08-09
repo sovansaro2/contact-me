@@ -3,30 +3,11 @@ import { ProfileService } from '@/services/profileService';
 import { ContactMethodService } from '@/services/contactMethodService';
 import type { Profile, ContactMethod } from '@/types/database.types';
 import { getActionUrl } from '@/lib/links';
+import { getIconForType, getColorForType } from '@/lib/iconMapping';
 import { 
-  Send, 
-  MessageSquare, 
-  Phone, 
-  MessageCircle, 
-  Mail, 
-  Facebook, 
-  Globe,
   Link as LinkIcon,
   AlertCircle
 } from 'lucide-react';
-
-const getIconForType = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'telegram': return Send;
-    case 'messenger': return MessageSquare;
-    case 'phone': return Phone;
-    case 'whatsapp': return MessageCircle;
-    case 'email': return Mail;
-    case 'facebook': return Facebook;
-    case 'website': return Globe;
-    default: return LinkIcon;
-  }
-};
 
 const getMethodDescription = (type: string, value: string) => {
   switch (type.toLowerCase()) {

@@ -11,16 +11,21 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'pwa-512x512-maskable.png'],
+        includeAssets: ['favicon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-512x512-maskable.png'],
         manifest: {
-          name: 'ទំនាក់ទំនងមកខ្ញុំ',
-          short_name: 'ទំនាក់ទំនង',
+          name: 'វត្តវារីបាការាម(ស្នាយដួច)',
+          short_name: 'វត្តវារីបាការាម',
           description: 'សូមជ្រើសរើសវិធីទំនាក់ទំនងដែលអ្នកងាយស្រួលបំផុត។',
           theme_color: '#F9FAFB',
           background_color: '#F9FAFB',
           display: 'standalone',
           orientation: 'portrait',
           icons: [
+            {
+              src: 'favicon.png',
+              sizes: '512x512',
+              type: 'image/png'
+            },
             {
               src: 'pwa-192x192.png',
               sizes: '192x192',

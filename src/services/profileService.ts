@@ -104,4 +104,33 @@ export class ProfileService {
       throw err;
     }
   }
+
+  /**
+   * Upload an avatar image for the owner.
+   */
+  static async uploadAvatar(file: File): Promise<string> {
+    try {
+      checkSupabaseConfig();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('Not authenticated');
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar.${fileExt}`;
+      const filePath = `${session.user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatar')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        throw new Error(`Failed to upload avatar: ${uploadError.message}`);
+      }
+
+      const { data } = supabase.storage.from('avatar').getPublicUrl(filePath);
+      return `${data.publicUrl}?t=${new Date().getTime()}`;
+    } catch (err: any) {
+      console.error(err);
+      throw err;
+    }
+  }
 }

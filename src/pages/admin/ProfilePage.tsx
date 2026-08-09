@@ -1,7 +1,8 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { ProfileService } from '@/services/profileService';
 import type { Profile } from '@/types/database.types';
-import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle2, ImageIcon, Upload, Loader2 } from 'lucide-react';
+import { useRef, ChangeEvent } from 'react';
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Partial<Profile>>({});
@@ -9,6 +10,50 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('ទំហំឯកសារធំពេក។ អតិបរមា 5MB។');
+      return;
+    }
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError('ប្រភេទឯកសារមិនត្រូវបានគាំទ្រ។ សូមប្រើប្រាស់ PNG, JPG ឬ WebP។');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setError(null);
+
+    try {
+      const publicUrl = await ProfileService.uploadAvatar(file);
+      
+      setProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
+      
+      await ProfileService.updateOwnerProfile({
+        display_name: profile.display_name || null,
+        bio: profile.bio || null,
+        avatar_url: publicUrl,
+        cover_url: profile.cover_url || null,
+      });
+      
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: any) {
+      console.error(err);
+      setError('មិនអាចអាប់ឡូតរូបភាពបានទេ');
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   useEffect(() => {
     loadProfile();
@@ -94,28 +139,57 @@ export default function ProfilePage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            រូបភាពប្រវត្តិរូប (Avatar URL)
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            រូបភាពប្រវត្តិរូប
           </label>
-          <input
-            type="url"
-            value={profile.avatar_url || ''}
-            onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all"
-            placeholder="https://example.com/avatar.jpg"
-          />
-          {profile.avatar_url && (
-            <div className="mt-3">
-              <p className="text-sm text-gray-500 mb-2">មើលជាមុន៖</p>
-              <img 
-                src={profile.avatar_url} 
-                alt="Preview" 
-                className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
-                onError={(e) => (e.currentTarget.style.display = 'none')}
-                onLoad={(e) => (e.currentTarget.style.display = 'block')}
-              />
+          
+          <div className="flex items-center gap-6">
+            <div className="shrink-0">
+              {profile.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt="Profile" 
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md bg-gray-100"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full border-4 border-white shadow-md bg-gray-100 flex items-center justify-center text-gray-400">
+                  <ImageIcon className="w-8 h-8" />
+                </div>
+              )}
             </div>
-          )}
+            
+            <div className="flex-1">
+              <input 
+                type="file"
+                ref={fileInputRef}
+                onChange={handleAvatarChange}
+                accept="image/png, image/jpeg, image/webp"
+                className="hidden"
+              />
+              
+              <div className="flex flex-col gap-2 items-start">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+                >
+                  {uploadingAvatar ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      កំពុងអាប់ឡូត...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      {profile.avatar_url ? 'ប្ដូររូបភាព' : 'ជ្រើសរើសរូបភាព'}
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-gray-500">គាំទ្រ PNG, JPG ឬ WebP (អតិបរមា 5MB)</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {error && (

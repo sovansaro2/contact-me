@@ -3,22 +3,9 @@ import { ContactMethodService } from '@/services/contactMethodService';
 import { ProfileService } from '@/services/profileService';
 import type { ContactMethod } from '@/types/database.types';
 import { 
-  Plus, Edit2, Trash2, ArrowUp, ArrowDown, 
-  Send, MessageSquare, Phone, MessageCircle, Mail, Facebook, Globe, Link as LinkIcon 
+  Plus, Edit2, Trash2, ArrowUp, ArrowDown 
 } from 'lucide-react';
-
-const getIconForType = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'telegram': return Send;
-    case 'messenger': return MessageSquare;
-    case 'phone': return Phone;
-    case 'whatsapp': return MessageCircle;
-    case 'email': return Mail;
-    case 'facebook': return Facebook;
-    case 'website': return Globe;
-    default: return LinkIcon;
-  }
-};
+import { getIconForType, contactMethodTypes } from '@/lib/iconMapping';
 
 const getPlaceholderForType = (type: string) => {
   switch (type.toLowerCase()) {
@@ -99,6 +86,12 @@ export default function ContactMethodsPage() {
 
   const handleTypeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const type = e.target.value;
+    
+    // Find the definition to get default Khmer label if needed, or just use English label
+    const definition = contactMethodTypes.find(def => def.type === type);
+    let defaultLabel = type;
+    
+    // Custom label mappings in Khmer for common types
     const labelMapping: Record<string, string> = {
       telegram: 'Telegram',
       messenger: 'Messenger',
@@ -106,13 +99,20 @@ export default function ContactMethodsPage() {
       whatsapp: 'WhatsApp',
       email: 'អ៊ីមែល',
       facebook: 'Facebook',
-      website: 'គេហទំព័រ'
+      website: 'គេហទំព័រ',
+      sms: 'សារ SMS',
     };
+    
+    if (labelMapping[type]) {
+      defaultLabel = labelMapping[type];
+    } else if (definition) {
+      defaultLabel = definition.label;
+    }
     
     setFormData(prev => ({
       ...prev,
       type,
-      label: labelMapping[type] || type
+      label: defaultLabel
     }));
   };
 
@@ -315,13 +315,10 @@ export default function ContactMethodsPage() {
                     onChange={handleTypeChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none bg-white"
                   >
-                    <option value="telegram">Telegram</option>
-                    <option value="messenger">Messenger</option>
-                    <option value="phone">ហៅទូរស័ព្ទ (Phone)</option>
-                    <option value="whatsapp">WhatsApp</option>
-                    <option value="email">អ៊ីមែល (Email)</option>
-                    <option value="facebook">Facebook</option>
-                    <option value="website">គេហទំព័រ (Website)</option>
+                    {contactMethodTypes.map(def => (
+                      <option key={def.type} value={def.type}>{def.label}</option>
+                    ))}
+                    <option value="other">ផ្សេងៗ (Other)</option>
                   </select>
                 </div>
 
