@@ -14,7 +14,7 @@ async function startServer() {
 
   // Health route
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "Backend is ready for Sabay Cloud!" });
+    res.json({ status: "ok", message: "Backend is ready!" });
   });
 
   // Vite middleware for development
