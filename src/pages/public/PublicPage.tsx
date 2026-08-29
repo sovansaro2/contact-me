@@ -7,9 +7,12 @@ import { getActionUrl, openContactLink } from '@/lib/links';
 import { getIconForType, getColorForType } from '@/lib/iconMapping';
 import { 
   Link as LinkIcon,
-  AlertCircle
+  AlertCircle,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTheme } from '@/hooks/useTheme';
 
 const getMethodDescription = (type: string, value: string, lang: 'kh' | 'en') => {
   switch (type.toLowerCase()) {
@@ -63,6 +66,7 @@ export default function PublicPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lang, setLang] = useState<'kh' | 'en'>('kh');
+  const [theme, toggleTheme] = useTheme();
 
   const loadData = async () => {
     try {
@@ -138,74 +142,87 @@ export default function PublicPage() {
     : profile?.bio;
 
   return (
-    <div className={`min-h-screen relative overflow-hidden bg-slate-50 selection:bg-gray-200 pb-[calc(3rem+env(safe-area-inset-bottom))] pt-[calc(3rem+env(safe-area-inset-top))] ${lang === 'en' ? "font-['Rajdhani'] font-medium" : "font-sans"}`}>
-      {/* Decorative App-like Background Blurs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] bg-blue-100/40 rounded-full blur-[100px] pointer-events-none"></div>
-      <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-amber-100/40 rounded-full blur-[100px] pointer-events-none"></div>
+    <div
+      className={`min-h-screen relative overflow-hidden bg-[#fdfcfa] text-stone-800 transition-colors duration-300 selection:bg-gray-200 pb-[calc(3rem+env(safe-area-inset-bottom))] pt-[calc(3rem+env(safe-area-inset-top))] dark:bg-[#1a1612] dark:text-[#f5ead3] ${lang === 'en' ? "font-['Rajdhani'] font-medium" : "font-sans"}`}
+    >
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(ellipse_at_center,rgba(217,164,65,0.22),transparent_65%)] opacity-0 transition-opacity duration-300 dark:opacity-100" />
+      <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[60%] rounded-full bg-blue-100/40 blur-[100px] pointer-events-none dark:bg-transparent" />
+      <div className="absolute top-[20%] right-[-10%] h-[50%] w-[50%] rounded-full bg-amber-100/40 blur-[100px] pointer-events-none dark:bg-transparent" />
 
-      <div className="w-full max-w-[420px] mx-auto px-4 relative z-10">
-        
-        {/* Profile Header */}
-        <motion.div 
+      <div className="relative z-10 mx-auto w-full max-w-[420px] px-4">
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col items-center mb-10 text-center relative"
+          className="relative mb-10 flex flex-col items-center text-center"
         >
-          {/* Language Switcher */}
-          <div className="absolute top-0 right-2 flex items-center bg-white/60 backdrop-blur-md rounded-full shadow-sm border border-gray-100/50 p-1 z-20">
-             <button 
-               onClick={() => setLang('kh')}
-               className={`px-3 py-1.5 rounded-full text-[13px] font-bold transition-all ${lang === 'kh' ? 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
-             >
-               KH
-             </button>
-             <button 
-               onClick={() => setLang('en')}
-               className={`px-3 py-1.5 rounded-full text-[13px] font-bold transition-all font-['Rajdhani'] ${lang === 'en' ? 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
-             >
-               EN
-             </button>
+          <div className="absolute right-2 top-0 z-20 flex items-center rounded-full border border-black/5 bg-white/70 p-1 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+            <button
+              type="button"
+              aria-label="Switch to Khmer"
+              onClick={() => setLang('kh')}
+              className={`rounded-full px-3 py-1.5 text-[13px] font-bold transition-all ${lang === 'kh' ? 'bg-white text-gray-900 shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:bg-white/10 dark:text-[#f5ead3]' : 'text-gray-500 hover:text-gray-900 dark:text-[#a89a80] dark:hover:text-[#f5ead3]'}`}
+            >
+              KH
+            </button>
+            <button
+              type="button"
+              aria-label="Switch to English"
+              onClick={() => setLang('en')}
+              className={`rounded-full px-3 py-1.5 text-[13px] font-bold transition-all font-['Rajdhani'] ${lang === 'en' ? 'bg-white text-gray-900 shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:bg-white/10 dark:text-[#f5ead3]' : 'text-gray-500 hover:text-gray-900 dark:text-[#a89a80] dark:hover:text-[#f5ead3]'}`}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              aria-label="Toggle theme"
+              onClick={toggleTheme}
+              className="ml-2 rounded-full border border-black/5 bg-white/70 p-2 text-gray-700 shadow-sm transition-colors hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-[#f5ead3] dark:hover:text-white"
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
           </div>
 
           {profile?.avatar_url ? (
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.1 }}
               className="relative mb-6"
             >
-              <div className="absolute inset-0 bg-gradient-to-tr from-gray-200 to-gray-50 rounded-full scale-105 blur-md opacity-60"></div>
-              <img 
-                src={profile.avatar_url} 
+              <div className="absolute inset-0 scale-105 rounded-full bg-gradient-to-tr from-gray-200 to-gray-50 blur-md opacity-60 dark:from-[#d9a441]/30 dark:to-[#d9a441]/5" />
+              <img
+                src={profile.avatar_url}
                 alt={displayName}
-                className="w-[124px] h-[124px] rounded-full object-cover shadow-sm border-[4px] border-white bg-white relative z-10"
+                className="relative z-10 h-[124px] w-[124px] rounded-full border-[4px] border-white bg-white object-cover shadow-sm dark:border-[#d9a441]"
                 loading="eager"
               />
             </motion.div>
           ) : (
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="w-[124px] h-[124px] rounded-full bg-gradient-to-tr from-gray-200 to-gray-100 shadow-sm border-[4px] border-white mb-6 flex items-center justify-center relative z-10"
+              className="relative z-10 mb-6 flex h-[124px] w-[124px] items-center justify-center rounded-full border-[4px] border-white bg-gradient-to-tr from-gray-200 to-gray-100 shadow-sm dark:border-[#d9a441] dark:from-[#d9a441]/20 dark:to-[#d9a441]/5"
             >
-              <span className="text-[48px] font-medium text-gray-400">
+              <span className="text-[48px] font-medium text-gray-400 dark:text-[#f5ead3]">
                 {displayName.charAt(0).toUpperCase()}
               </span>
             </motion.div>
           )}
-          
-          <h1 
-            className="text-[28px] font-bold tracking-tight text-gray-900 mb-2 px-4 leading-tight whitespace-nowrap overflow-hidden text-ellipsis w-full max-w-[340px]"
+
+          <h1
+            className="mb-2 w-full max-w-[340px] overflow-hidden whitespace-nowrap px-4 text-[28px] leading-tight tracking-tight text-stone-800 dark:text-[#f5ead3]"
             style={{ fontFamily: "'Koulen', 'Khmer OS Koulen', sans-serif", fontWeight: 'normal' }}
           >
             {displayName}
           </h1>
-          
+
+          <div className="mb-4 h-[2px] w-[52px] bg-gradient-to-r from-transparent via-[#d9a441] to-transparent" />
+
           {bio && (
-            <p 
-              className="text-gray-600 text-[16px] max-w-[340px] w-full mx-auto leading-relaxed px-2 font-medium"
+            <p
+              className="mx-auto w-full max-w-[340px] px-2 text-[16px] font-medium leading-relaxed text-stone-500 dark:text-[#a89a80]"
               style={{ fontFamily: "'Battambang', 'Khmer OS Battambang', sans-serif" }}
             >
               {bio}
@@ -213,8 +230,7 @@ export default function PublicPage() {
           )}
         </motion.div>
 
-        {/* Contact Methods Section */}
-        <motion.div 
+        <motion.div
           initial="hidden"
           animate="visible"
           variants={{
@@ -229,20 +245,20 @@ export default function PublicPage() {
           className="space-y-4"
         >
           {contactMethods.length === 0 ? (
-            <motion.div 
+            <motion.div
               variants={{
                 hidden: { opacity: 0, y: 20 },
                 visible: { opacity: 1, y: 0 }
               }}
-              className="p-10 rounded-[32px] bg-white/60 backdrop-blur-xl shadow-sm border border-gray-100/50 text-center flex flex-col items-center justify-center"
+              className="flex flex-col items-center justify-center rounded-[32px] border border-[#eee7db] bg-white p-10 text-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] transition-colors duration-300 dark:border-[#d9a441]/15 dark:bg-white/[0.055] dark:backdrop-blur"
             >
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-gray-50">
-                <LinkIcon className="w-7 h-7 text-gray-300" />
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[#eee7db] bg-[#f7f4ee] shadow-sm dark:border-[#d9a441]/15 dark:bg-[#d9a441]/12">
+                <LinkIcon className="h-7 w-7 text-stone-400 dark:text-[#9a8b6f]" />
               </div>
-              <p className="text-gray-600 text-[17px] font-medium">
+              <p className="text-[17px] font-medium text-stone-800 dark:text-[#f0e6d2]">
                 {lang === 'kh' ? 'មិនទាន់មានវិធីទំនាក់ទំនង' : 'No contact methods yet'}
               </p>
-              <p className="text-gray-400 text-[15px] mt-1.5">
+              <p className="mt-1.5 text-[15px] text-stone-400 dark:text-[#9a8b6f]">
                 {lang === 'kh' ? 'សូមរង់ចាំការបន្ថែមនៅពេលក្រោយ' : 'Please check back later'}
               </p>
             </motion.div>
@@ -253,7 +269,7 @@ export default function PublicPage() {
               const description = getMethodDescription(method.type, method.value, lang);
               const brandColor = getColorForType(method.type);
               const localizedLabel = getLocalizedLabel(method.type, method.label, lang);
-              
+
               return (
                 <motion.a
                   variants={{
@@ -271,39 +287,39 @@ export default function PublicPage() {
                     openContactLink(method.type, method.value);
                   }}
                   aria-label={`ទាក់ទងតាម ${method.label}`}
-                  className="flex items-center p-[20px] rounded-[28px] bg-white/80 backdrop-blur-xl shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] border border-gray-100/60 hover:shadow-md hover:bg-white transition-all duration-300 group focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  className="group flex items-center rounded-[28px] border border-[#eee7db] bg-white p-[20px] shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] transition-all duration-300 hover:bg-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 dark:border-[#d9a441]/15 dark:bg-white/[0.055] dark:backdrop-blur dark:hover:bg-white/[0.065]"
                   style={{ '--tw-ring-color': brandColor } as CSSProperties}
                 >
-                  <div 
-                    className="relative w-[56px] h-[56px] flex items-center justify-center rounded-[20px] transition-colors duration-300 overflow-hidden shrink-0"
+                  <div
+                    className="relative h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[20px] transition-colors duration-300"
                     style={{ backgroundColor: `${brandColor}15` }}
                   >
-                    <Icon 
-                      className="w-[28px] h-[28px] relative z-10 transition-transform duration-300 group-hover:scale-110" 
+                    <Icon
+                      className="relative z-10 h-[28px] w-[28px] transition-transform duration-300 group-hover:scale-110"
                       style={{ color: brandColor }}
                     />
                   </div>
-                  
-                  <div className="ml-[20px] flex-1 min-w-0">
-                    <h2 
-                      className="text-[18px] font-medium text-gray-900 truncate"
+
+                  <div className="ml-[20px] min-w-0 flex-1">
+                    <h2
+                      className="truncate text-[18px] font-medium text-stone-800 dark:text-[#f0e6d2]"
                       style={{ fontFamily: "'Rajdhani', 'Battambang', 'Khmer OS Battambang', sans-serif" }}
                     >
                       {localizedLabel}
                     </h2>
                     {description && (
-                      <p 
-                        className="text-[15px] text-gray-500 truncate mt-0.5 font-medium"
+                      <p
+                        className="mt-0.5 truncate text-[15px] font-medium text-stone-400 dark:text-[#9a8b6f]"
                         style={{ fontFamily: "'Rajdhani', 'Battambang', 'Khmer OS Battambang', sans-serif" }}
                       >
                         {description}
                       </p>
                     )}
                   </div>
-                  
-                  <div className="pl-4 text-gray-300 group-hover:text-gray-900 transition-colors duration-300 flex items-center justify-center">
-                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-gray-100 transition-colors">
-                      <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+                  <div className="flex items-center justify-center pl-4 text-gray-300 transition-colors duration-300 group-hover:text-gray-900 dark:text-[#9a8b6f] dark:group-hover:text-[#f5ead3]">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 transition-colors group-hover:bg-gray-100 dark:bg-[#d9a441]/10 dark:group-hover:bg-[#d9a441]/15">
+                      <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
@@ -313,15 +329,14 @@ export default function PublicPage() {
             })
           )}
         </motion.div>
-        
-        {/* Footer App-like indicator */}
-        <motion.div 
+
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="mt-12 mb-6 flex justify-center"
+          className="mb-6 mt-12 flex justify-center"
         >
-          <div className="w-12 h-1.5 bg-gray-200/80 rounded-full"></div>
+          <div className="h-1.5 w-12 rounded-full bg-gray-200/80 dark:bg-[#d9a441]/20" />
         </motion.div>
       </div>
     </div>

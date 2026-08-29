@@ -124,139 +124,165 @@ export default function InstallGate({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-y-auto bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm text-white">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center text-4xl">
-            📲
-          </div>
-          <h1 className="text-2xl font-bold mb-2">ដំឡើង App មុនសិន</h1>
-          <p className="text-indigo-100 text-sm leading-relaxed">
-            App នេះដំណើរការតែលើ Home Screen ប៉ុណ្ណោះ។ សូមដំឡើងវាដើម្បីបន្ត។
-          </p>
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950">
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-2 h-64 w-64 -translate-x-1/2 rounded-full bg-indigo-500/20 blur-3xl" />
+
+      <div className="relative mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] pt-[env(safe-area-inset-top)]">
+        <div className="relative">
+          <img src="/pwa-192x192.png" alt="App icon" className="h-24 w-24 rounded-[1.4rem] shadow-2xl ring-1 ring-white/10" />
+          <span className="absolute -bottom-1.5 -right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500 shadow-lg ring-2 ring-slate-950">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="h-3.5 w-3.5 text-white" aria-hidden>
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </span>
         </div>
 
-        {/* ANDROID in-app browser: auto-redirect to Chrome, then manual copy/open fallback */}
-        {inApp && platform === 'android' ? (
-          <div className="bg-white/95 text-gray-900 rounded-2xl p-6 shadow-xl">
-            {!redirectFailed ? (
-              <div className="flex flex-col items-center py-4">
-                <div className="w-10 h-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin mb-4"></div>
-                <p className="text-sm font-medium text-gray-700">កំពុងបើកក្នុង Chrome...</p>
-              </div>
-            ) : (
-              <>
-                <h2 className="font-bold mb-2">សូមបើកក្នុង Chrome ដោយដៃ</h2>
-                <p className="text-sm text-gray-600 mb-4">ការបើកស្វ័យប្រវត្តិមិនបានដំណើរការទេ។ សូមចម្លង Link រួចបើកក្នុង Chrome។</p>
-                <button
-                  onClick={copyLink}
-                  className="w-full py-3.5 bg-white text-gray-900 font-bold rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                >
-                  {copied ? '✅ ចម្លងរួចរាល់!' : '📋 ចម្លង Link'}
-                </button>
-                <p className="text-xs text-gray-500 mt-3 leading-relaxed">
-                  បើកកម្មវិធី <strong>Chrome</strong> → ចុច address bar យូរៗ → <strong>Paste</strong> → បើក។ បន្ទាប់មកអ្នកនឹងឃើញការណែនាំដំឡើង។
-                </p>
-              </>
-            )}
-          </div>
-        ) : inApp ? (
-          /* iOS (and other) in-app browsers: copy the link, then open in Safari */
-          <div className="bg-white/95 text-gray-900 rounded-2xl p-6 shadow-xl">
-            <h2 className="font-bold mb-4">សូមបើកក្នុង Safari ជាមុនសិន</h2>
-            <button
-              onClick={copyLink}
-              className="w-full py-3.5 bg-white text-gray-900 font-bold rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-            >
-              {copied ? '✅ ចម្លងរួចរាល់!' : '📋 ចម្លង Link'}
-            </button>
-            <ol className="space-y-3 text-sm text-gray-700 mt-5">
-              <li className="flex gap-3 items-center">
-                <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">1</span>
-                <span>ចុច <strong>"ចម្លង Link"</strong> ខាងលើ។</span>
-              </li>
-              <li className="flex gap-3 items-center">
-                <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">2</span>
-                <span>បើកកម្មវិធី <strong>Safari</strong> → ចុចបន្ថែមលើ address bar យូរៗ → paste → បើក។</span>
-              </li>
-              <li className="flex gap-3 items-center">
-                <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">3</span>
-                <span>បន្ទាប់មកអ្នកនឹងឃើញការណែនាំដំឡើង។</span>
-              </li>
-            </ol>
-            {telegram && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs leading-relaxed">
-                💡 ក្នុង Telegram៖ ចុច ⋯ មុំខាងស្តាំលើ → <strong>Open in Safari</strong>
-              </div>
-            )}
-          </div>
-        ) : platform === 'android' ? (
-
-          /* ANDROID */
-          <div className="bg-white/95 text-gray-900 rounded-2xl p-6 shadow-xl">
-            {installPrompt ? (
-              <>
-                <p className="text-sm text-gray-600 mb-4 text-center">
-                  ចុចប៊ូតុងខាងក្រោមដើម្បីដំឡើងចូល Home Screen។
-                </p>
-                <button
-                  onClick={handleInstallClick}
-                  className="w-full py-3.5 bg-white text-gray-900 font-bold rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                >
-                  🚀 ដំឡើងឥឡូវនេះ
-                </button>
-              </>
-            ) : (
-              <>
-                <h2 className="font-bold mb-4">សូមដំឡើងដោយដៃ</h2>
-                <ol className="space-y-3 text-sm text-gray-700">
-                  <li className="flex gap-3 items-center">
-                    <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">1</span>
-                    <span>ចុចម៉ឺនុយ <strong>⋮</strong> នៅជ្រុងខាងលើ</span>
-                  </li>
-                  <li className="flex gap-3 items-center">
-                    <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">2</span>
-                    <span>ជ្រើសរើស <strong>"Add to Home screen"</strong> ឬ <strong>"Install app"</strong></span>
-                  </li>
-                  <li className="flex gap-3 items-center">
-                    <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">3</span>
-                    <span>បញ្ជាក់ដោយចុច <strong>"Install"</strong></span>
-                  </li>
-                </ol>
-              </>
-            )}
-          </div>
-        ) : (
-
-          /* iOS */
-          <div className="bg-white/95 text-gray-900 rounded-2xl p-6 shadow-xl">
-            {!iosSafari && (
-              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs leading-relaxed">
-                ⚠️ ការដំឡើងដំណើរការតែលើ <strong>Safari</strong> ប៉ុណ្ណោះ។ សូម copy link នេះ រួចបើកក្នុង Safari ជាមុនសិន។
-              </div>
-            )}
-            <h2 className="font-bold mb-4">វិធីដំឡើង</h2>
-            <ol className="space-y-3 text-sm text-gray-700">
-              <li className="flex gap-3 items-center">
-                <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">1</span>
-                <span>ចុចប៊ូតុង <strong>Share ⬆️</strong> នៅខាងក្រោម browser</span>
-              </li>
-              <li className="flex gap-3 items-center">
-                <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">2</span>
-                <span>រកមើល រួចជ្រើសរើស <strong>"Add to Home Screen"</strong></span>
-              </li>
-              <li className="flex gap-3 items-center">
-                <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">3</span>
-                <span>ចុច <strong>"Add"</strong> ដើម្បីបញ្ជាក់</span>
-              </li>
-            </ol>
-          </div>
-        )}
-
-        <p className="text-center text-indigo-200 text-xs mt-6">
-          បន្ទាប់ពីដំឡើងរួច សូមបើក App ពី Home Screen។
+        <h1 className="mt-6 text-center text-2xl font-bold leading-tight text-white">ដំឡើង App មុនសិន</h1>
+        <p className="mx-auto mt-2 max-w-xs text-center text-sm leading-relaxed text-slate-400">
+          App នេះដំណើរការតែលើ Home Screen ប៉ុណ្ណោះ។ សូមដំឡើងវាដើម្បីបន្ត។
         </p>
+
+        <div className="mt-8 w-full rounded-2xl bg-white/5 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.55)] ring-1 ring-white/10 backdrop-blur-sm">
+          {inApp && platform === 'android' ? (
+            <>
+              {!redirectFailed ? (
+                <div className="flex flex-col items-center py-4">
+                  <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-400" />
+                  <p className="text-sm font-medium text-slate-300">កំពុងបើកក្នុង Chrome...</p>
+                </div>
+              ) : (
+                <>
+                  <h2 className="mb-2 text-base font-bold text-white">សូមបើកក្នុង Chrome ដោយដៃ</h2>
+                  <p className="mb-4 text-sm leading-relaxed text-slate-400">
+                    ការបើកស្វ័យប្រវត្តិមិនបានដំណើរការទេ។ សូមចម្លង Link រួចបើកក្នុង Chrome។
+                  </p>
+                  <button
+                    onClick={copyLink}
+                    className="flex w-full items-center justify-center rounded-xl bg-white px-4 py-3.5 text-sm font-bold text-slate-950 shadow-lg transition-all hover:bg-slate-100 active:scale-[0.98]"
+                    type="button"
+                  >
+                    {copied ? 'ចម្លងរួចរាល់' : 'ចម្លង Link'}
+                  </button>
+                  <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                    បើកកម្មវិធី <strong>Chrome</strong> → ចុច address bar យូរៗ → <strong>Paste</strong> → បើក។
+                    បន្ទាប់មកអ្នកនឹងឃើញការណែនាំដំឡើង។
+                  </p>
+                </>
+              )}
+            </>
+          ) : inApp ? (
+            <>
+              <h2 className="mb-4 text-base font-bold text-white">សូមបើកក្នុង Safari ជាមុនសិន</h2>
+              <button
+                onClick={copyLink}
+                className="flex w-full items-center justify-center rounded-xl bg-white px-4 py-3.5 text-sm font-bold text-slate-950 shadow-lg transition-all hover:bg-slate-100 active:scale-[0.98]"
+                type="button"
+              >
+                {copied ? 'ចម្លងរួចរាល់' : 'ចម្លង Link'}
+              </button>
+              <ol className="mt-5 space-y-3 text-sm text-slate-200">
+                <li className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">1</span>
+                  <span>ចុច <strong>"ចម្លង Link"</strong> ខាងលើ។</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">2</span>
+                  <span>បើកកម្មវិធី <strong>Safari</strong> → ចុច address bar → paste → បើក។</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">3</span>
+                  <span>បន្ទាប់មកអ្នកនឹងឃើញការណែនាំដំឡើង។</span>
+                </li>
+              </ol>
+              {telegram && (
+                <div className="mt-4 rounded-xl bg-indigo-500/10 p-3 text-xs leading-relaxed text-indigo-200 ring-1 ring-indigo-400/20">
+                  ក្នុង Telegram៖ ចុច ⋯ មុំខាងស្តាំលើ → Open in Safari
+                </div>
+              )}
+            </>
+          ) : platform === 'android' ? (
+            <>
+              {installPrompt ? (
+                <>
+                  <p className="mb-4 text-center text-sm text-slate-400">
+                    ចុចប៊ូតុងខាងក្រោមដើម្បីដំឡើងចូល Home Screen។
+                  </p>
+                  <button
+                    onClick={handleInstallClick}
+                    className="flex w-full items-center justify-center rounded-xl bg-white px-4 py-3.5 text-sm font-bold text-slate-950 shadow-lg transition-all hover:bg-slate-100 active:scale-[0.98]"
+                    type="button"
+                  >
+                    ដំឡើងឥឡូវនេះ
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2 className="mb-4 text-base font-bold text-white">សូមដំឡើងដោយដៃ</h2>
+                  <ol className="space-y-3 text-sm text-slate-200">
+                    <li className="flex items-center gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">1</span>
+                      <span>ចុចម៉ឺនុយ <strong>⋮</strong> នៅជ្រុងខាងលើ</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">2</span>
+                      <span>ជ្រើសរើស <strong>"Add to Home screen"</strong> ឬ <strong>"Install app"</strong></span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">3</span>
+                      <span>បញ្ជាក់ដោយចុច <strong>"Install"</strong></span>
+                    </li>
+                  </ol>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              {!iosSafari && (
+                <div className="mb-4 rounded-xl bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-200 ring-1 ring-amber-400/20">
+                  ការដំឡើងដំណើរការតែលើ <strong>Safari</strong> ប៉ុណ្ណោះ។ សូមចម្លង Link នេះ រួចបើកក្នុង Safari ជាមុនសិន។
+                </div>
+              )}
+              <h2 className="mb-4 text-base font-bold text-white">វិធីដំឡើង</h2>
+              <ol className="space-y-3 text-sm text-slate-200">
+                <li className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">1</span>
+                  <span>
+                    ចុចប៊ូតុង <strong>Share</strong>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="mx-1 inline-block h-4 w-4 align-[-3px] text-indigo-300"
+                      aria-hidden
+                    >
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                      <polyline points="16 6 12 2 8 6" />
+                      <line x1="12" y1="2" x2="12" y2="15" />
+                    </svg>
+                    នៅខាងក្រោម browser
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">2</span>
+                  <span>រកមើល រួចជ្រើសរើស <strong>"Add to Home Screen"</strong></span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">3</span>
+                  <span>ចុច <strong>"Add"</strong> ដើម្បីបញ្ជាក់</span>
+                </li>
+              </ol>
+            </>
+          )}
+        </div>
+
+        <p className="mt-6 text-center text-xs text-slate-500">បន្ទាប់ពីដំឡើងរួច សូមបើក App ពី Home Screen</p>
+        <div className="mt-3 flex items-center justify-center gap-1.5">
+          <img src="/pwa-192x192.png" alt="" className="h-4 w-4 rounded-[0.3rem]" />
+          <span className="text-xs font-medium text-slate-600">វត្តវារីបាការាម</span>
+        </div>
       </div>
     </div>
   );
