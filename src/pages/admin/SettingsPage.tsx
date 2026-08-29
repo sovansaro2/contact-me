@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 
@@ -11,7 +11,7 @@ export default function SettingsPage() {
   
   const { user } = useAuth();
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
+  const handleUpdatePassword = async (e: FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       setMessage({ type: 'error', text: 'ពាក្យសម្ងាត់ថ្មីមិនផ្ទៀងផ្ទាត់គ្នាទេ' });

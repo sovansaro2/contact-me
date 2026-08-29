@@ -132,6 +132,7 @@ export default function ContactMethodsPage() {
           type: formData.type,
           label: formData.label,
           value: formData.value,
+          icon: null,
           enabled: formData.enabled,
           sort_order: methods.length // Appended at the end
         });

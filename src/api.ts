@@ -3,9 +3,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from './db/index.js';
 import { users, profiles, contactMethods } from './db/schema.js';
-import { eq, desc } from 'drizzle-orm';
+import { eq, and, desc, count } from 'drizzle-orm';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-jwt-key-2026';
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export const apiRouter = Router();
 
@@ -53,6 +56,10 @@ const mapContactMethod = (c: any) => c ? {
 
 // --- AUTH ---
 apiRouter.post('/auth/register', async (req: any, res: any) => {
+  // Registration disabled: single-admin app
+  return res.status(403).json({ error: 'Registration is disabled' });
+
+  /* Registration disabled: single-admin app — original logic kept for reference:
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -77,6 +84,7 @@ apiRouter.post('/auth/register', async (req: any, res: any) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+  */
 });
 
 apiRouter.post('/auth/login', async (req: any, res: any) => {
@@ -112,6 +120,21 @@ apiRouter.get('/profiles/public/:id', async (req: any, res: any) => {
     if (req.params.id === 'default' || req.params.id === 'undefined') {
        const profilesList = await db.select().from(profiles).orderBy(desc(profiles.updatedAt)).limit(1);
        profile = profilesList[0];
+       // Guard: only expose a "default" profile when it is explicitly designated
+       if (profile) {
+         const expectedUserId = process.env.DEFAULT_PROFILE_USER_ID;
+         if (expectedUserId) {
+           if (profile.userId !== expectedUserId) {
+             return res.status(404).json({ error: 'Not found' });
+           }
+         } else {
+           // No designated profile configured: only allow when exactly one profile exists
+           const [{ total }] = await db.select({ total: count() }).from(profiles);
+           if (total > 1) {
+             return res.status(404).json({ error: 'Not found' });
+           }
+         }
+       }
     } else {
        const profilesList = await db.select().from(profiles).where(eq(profiles.userId, req.params.id));
        profile = profilesList[0];
@@ -223,8 +246,9 @@ apiRouter.put('/contact-methods/:id', authenticate, async (req: any, res: any) =
 
     const [updated] = await db.update(contactMethods)
       .set(updateData)
-      .where(eq(contactMethods.id, req.params.id))
+      .where(and(eq(contactMethods.id, req.params.id), eq(contactMethods.userId, req.user.userId)))
       .returning();
+    if (!updated) return res.status(404).json({ error: 'Contact method not found' });
     res.json({ contactMethod: mapContactMethod(updated) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -233,7 +257,10 @@ apiRouter.put('/contact-methods/:id', authenticate, async (req: any, res: any) =
 
 apiRouter.delete('/contact-methods/:id', authenticate, async (req: any, res: any) => {
   try {
-    await db.delete(contactMethods).where(eq(contactMethods.id, req.params.id));
+    const deleted = await db.delete(contactMethods)
+      .where(and(eq(contactMethods.id, req.params.id), eq(contactMethods.userId, req.user.userId)))
+      .returning();
+    if (deleted.length === 0) return res.status(404).json({ error: 'Contact method not found' });
     res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -246,7 +273,7 @@ apiRouter.post('/contact-methods/reorder', authenticate, async (req: any, res: a
     for (let i = 0; i < orderedIds.length; i++) {
       await db.update(contactMethods)
         .set({ order: i.toString() })
-        .where(eq(contactMethods.id, orderedIds[i]));
+        .where(and(eq(contactMethods.id, orderedIds[i]), eq(contactMethods.userId, req.user.userId)));
     }
     res.json({ success: true });
   } catch (err: any) {

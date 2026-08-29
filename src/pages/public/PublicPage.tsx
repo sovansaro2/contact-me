@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useParams } from 'react-router-dom';
 import { ProfileService } from '@/services/profileService';
 import { ContactMethodService } from '@/services/contactMethodService';
@@ -268,7 +268,7 @@ export default function PublicPage() {
                   rel="noopener noreferrer"
                   aria-label={`ទាក់ទងតាម ${method.label}`}
                   className="flex items-center p-[20px] rounded-[28px] bg-white/80 backdrop-blur-xl shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] border border-gray-100/60 hover:shadow-md hover:bg-white transition-all duration-300 group focus:outline-none focus:ring-2 focus:ring-offset-2"
-                  style={{ '--tw-ring-color': brandColor } as React.CSSProperties}
+                  style={{ '--tw-ring-color': brandColor } as CSSProperties}
                 >
                   <div 
                     className="relative w-[56px] h-[56px] flex items-center justify-center rounded-[20px] transition-colors duration-300 overflow-hidden shrink-0"

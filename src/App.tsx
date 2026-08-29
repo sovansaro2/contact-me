@@ -4,7 +4,12 @@
  */
 
 import AppRoutes from './routes';
+import InstallGate from './components/Install';
 
 export default function App() {
-  return <AppRoutes />;
+  return (
+    <InstallGate>
+      <AppRoutes />
+    </InstallGate>
+  );
 }
