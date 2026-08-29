@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /profiles/{profileId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == profileId;
+      allow create: if request.auth != null && request.auth.uid == profileId;
+    }
+    match /contact_methods/{methodId} {
+      allow read: if true;
+      allow create, write: if request.auth != null && request.auth.uid == request.resource.data.profile_id;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.profile_id;
+    }
+  }
+}

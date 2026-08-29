@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { ProfileService } from '@/services/profileService';
-import { supabase } from '@/lib/supabase';
+import { auth } from '@/lib/firebase';
+import { updatePassword } from 'firebase/auth';
 import type { Profile } from '@/types/database.types';
 import { Save, AlertCircle, CheckCircle2, Key } from 'lucide-react';
 
@@ -10,7 +11,7 @@ export default function SettingsPage() {
     backgroundColor: '#F9FAFB',
     cardColor: '#FFFFFF',
     primaryColor: '#111827',
-    textColor: '#111827'
+    textColor: '#111827',
   });
   
   const [loading, setLoading] = useState(true);
@@ -20,38 +21,38 @@ export default function SettingsPage() {
 
   const [newPassword, setNewPassword] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
-  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProfile();
+    const loadProfile = async () => {
+      try {
+        const p = await ProfileService.getOwnerProfile();
+        if (p) {
+          setProfile(p);
+          if (p.theme_settings) {
+            setTheme(p.theme_settings as any);
+          }
+        }
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    // Ensure auth is loaded
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        loadProfile();
+      } else {
+        setLoading(false);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      const data = await ProfileService.getOwnerProfile();
-      if (data) {
-        setProfile(data);
-        if (data.theme_settings && typeof data.theme_settings === 'object') {
-          const t = data.theme_settings as any;
-          setTheme({
-            backgroundColor: t.backgroundColor || '#F9FAFB',
-            cardColor: t.cardColor || '#FFFFFF',
-            primaryColor: t.primaryColor || '#111827',
-            textColor: t.textColor || '#111827'
-          });
-        }
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError('មិនអាចផ្ទុកការកំណត់បានទេ');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
@@ -59,52 +60,46 @@ export default function SettingsPage() {
 
     try {
       await ProfileService.updateOwnerProfile({
-        theme_settings: theme as any,
+        theme_settings: theme,
       });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      console.error(err);
-      setError('មិនអាចរក្សាទុកបានទេ');
+      setError(err.message || 'មានបញ្ហាពេលរក្សាទុក');
     } finally {
       setSaving(false);
     }
   };
 
-  const handlePasswordChange = async (e: FormEvent) => {
+  const handlePasswordChange = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (newPassword.length < 6) {
+    if (!newPassword || newPassword.length < 6) {
       setPasswordError('ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ ៦ តួអក្សរ');
       return;
     }
+
     setPasswordSaving(true);
     setPasswordError(null);
     setPasswordMessage(null);
-    
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
 
-    if (error) {
-      setPasswordError(error.message);
-    } else {
+    try {
+      if (!auth.currentUser) throw new Error('Not authenticated');
+      await updatePassword(auth.currentUser, newPassword);
       setPasswordMessage('ពាក្យសម្ងាត់ត្រូវបានផ្លាស់ប្តូរដោយជោគជ័យ');
       setNewPassword('');
-      setTimeout(() => setPasswordMessage(null), 5000);
+    } catch (err: any) {
+      setPasswordError(err.message || 'មានបញ្ហាពេលប្តូរពាក្យសម្ងាត់');
+    } finally {
+      setPasswordSaving(false);
     }
-    setPasswordSaving(false);
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
-    );
+    return <div className="animate-pulse flex space-x-4"><div className="flex-1 space-y-4 py-1"><div className="h-4 bg-gray-200 rounded w-3/4"></div></div></div>;
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in-up">
       <div>
         <h1 className="text-2xl font-bold mb-6">ការកំណត់រូបរាង (Theme)</h1>
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-6">
@@ -211,7 +206,6 @@ export default function SettingsPage() {
               <p>{error}</p>
             </div>
           )}
-
           {success && (
             <div className="p-4 bg-green-50 text-green-700 rounded-lg border border-green-100 flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 shrink-0" />
@@ -261,7 +255,6 @@ export default function SettingsPage() {
               <p>{passwordError}</p>
             </div>
           )}
-
           {passwordMessage && (
             <div className="p-4 bg-green-50 text-green-700 rounded-lg border border-green-100 flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 shrink-0" />

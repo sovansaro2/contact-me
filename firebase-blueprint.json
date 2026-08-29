@@ -1,0 +1,38 @@
+{
+  "collections": [
+    {
+      "name": "profiles",
+      "rules": [
+        {
+          "allow": "read",
+          "condition": "true"
+        },
+        {
+          "allow": "write",
+          "condition": "request.auth != null && request.auth.uid == resource.id"
+        },
+        {
+          "allow": "create",
+          "condition": "request.auth != null && request.auth.uid == documentId"
+        }
+      ]
+    },
+    {
+      "name": "contact_methods",
+      "rules": [
+        {
+          "allow": "read",
+          "condition": "true"
+        },
+        {
+          "allow": "write, create",
+          "condition": "request.auth != null && request.auth.uid == request.resource.data.profile_id"
+        },
+        {
+          "allow": "update, delete",
+          "condition": "request.auth != null && request.auth.uid == resource.data.profile_id"
+        }
+      ]
+    }
+  ]
+}

@@ -1,133 +1,94 @@
-import { supabase, checkSupabaseConfig } from '@/lib/supabase';
-import type { Database, Profile } from '@/types/database.types';
-
-type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
-type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
+import { db, auth, storage } from '@/lib/firebase';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import type { Profile } from '@/types/database.types';
 
 export class ProfileService {
-  /**
-   * Fetch the public profile for a given user ID.
-   * If there is only one owner in this app, we might just fetch the first profile we find
-   * or a specific well-known ID if passed.
-   */
   static async getPublicProfile(profileId?: string): Promise<Profile | null> {
     try {
-      checkSupabaseConfig();
-      let query = supabase.from('profiles').select('*');
-      
-      if (profileId) {
-        query = query.eq('id', profileId);
+      // For this app, if profileId is empty, we just fallback to the auth user if any, 
+      // but if it's public we might just have a hardcoded ID or the URL parameter.
+      // Assuming a single-user app or we fetch the owner's profile based on auth for simplicity.
+      // Since it's a contact-me page, we might just fetch the single user profile if profileId is passed.
+      if (!profileId) return null;
+      const docRef = doc(db, 'profiles', profileId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return docSnap.data() as Profile;
       }
-      
-      const { data, error } = await query.limit(1).single();
-
-      if (error) {
-        if (error.code === 'PGRST116') return null; // Not found
-        throw new Error(`Failed to fetch public profile: ${error.message}`);
-      }
-
-      return data;
+      return null;
     } catch (err: any) {
-      if (err.message !== 'Supabase configuration is missing or invalid.') {
-        console.warn(err.message || err);
-      }
+      console.warn(err.message || err);
       return null;
     }
   }
 
-  /**
-   * Fetch the currently authenticated owner's profile.
-   */
   static async getOwnerProfile(): Promise<Profile | null> {
     try {
-      checkSupabaseConfig();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // If not found, create a blank profile
-          const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert({ id: session.user.id })
-            .select()
-            .single();
-            
-          if (insertError) throw new Error(`Failed to create owner profile: ${insertError.message}`);
-          return newProfile;
-        }
-        throw new Error(`Failed to fetch owner profile: ${error.message}`);
+      const user = auth.currentUser;
+      if (!user) throw new Error('Not authenticated');
+      
+      const docRef = doc(db, 'profiles', user.uid);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        return docSnap.data() as Profile;
+      } else {
+        const newProfile: Profile = {
+          id: user.uid,
+          display_name: user.displayName || null,
+          bio: null,
+          avatar_url: user.photoURL || null,
+          cover_url: null,
+          theme_settings: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        await setDoc(docRef, newProfile);
+        return newProfile;
       }
-
-      return data;
     } catch (err: any) {
       console.error(err);
       throw err;
     }
   }
 
-  /**
-   * Update or create the owner's profile.
-   */
-  static async updateOwnerProfile(updates: Omit<ProfileUpdate, 'id'>): Promise<Profile> {
+  static async updateOwnerProfile(updates: Partial<Omit<Profile, 'id'>>): Promise<Profile> {
     try {
-      checkSupabaseConfig();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('Not authenticated');
+      const user = auth.currentUser;
+      if (!user) throw new Error('Not authenticated');
 
-      // Attempt to upsert the profile.
-      // Upsert relies on the primary key, which is the user's ID.
-      const payload: ProfileInsert = {
-        id: session.user.id,
+      const docRef = doc(db, 'profiles', user.uid);
+      const updateData = {
         ...updates,
-        updated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert(payload)
-        .select()
-        .single();
-
-      if (error) throw new Error(`Failed to update profile: ${error.message}`);
-      if (!data) throw new Error('Failed to update profile: No data returned');
-
-      return data;
+      
+      // Use setDoc with merge to ensure it creates if not exists
+      await setDoc(docRef, updateData, { merge: true });
+      
+      const updatedSnap = await getDoc(docRef);
+      return updatedSnap.data() as Profile;
     } catch (err: any) {
       console.error(err);
       throw err;
     }
   }
 
-  /**
-   * Upload an avatar image for the owner.
-   */
   static async uploadAvatar(file: File): Promise<string> {
     try {
-      checkSupabaseConfig();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error('Not authenticated');
+      const user = auth.currentUser;
+      if (!user) throw new Error('Not authenticated');
 
       const fileExt = file.name.split('.').pop();
       const fileName = `avatar.${fileExt}`;
-      const filePath = `${session.user.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatar')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) {
-        throw new Error(`Failed to upload avatar: ${uploadError.message}`);
-      }
-
-      const { data } = supabase.storage.from('avatar').getPublicUrl(filePath);
-      return `${data.publicUrl}?t=${new Date().getTime()}`;
+      const filePath = `avatars/${user.uid}/${fileName}`;
+      
+      const storageRef = ref(storage, filePath);
+      await uploadBytes(storageRef, file);
+      
+      const url = await getDownloadURL(storageRef);
+      return `${url}?t=${new Date().getTime()}`;
     } catch (err: any) {
       console.error(err);
       throw err;
