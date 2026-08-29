@@ -1,283 +1,112 @@
-import { useState, useEffect, FormEvent } from 'react';
-import { ProfileService } from '@/services/profileService';
-import { auth } from '@/lib/firebase';
-import { updatePassword } from 'firebase/auth';
-import type { Profile } from '@/types/database.types';
-import { Save, AlertCircle, CheckCircle2, Key } from 'lucide-react';
+import { useState } from 'react';
+import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
 
 export default function SettingsPage() {
-  const [profile, setProfile] = useState<Partial<Profile>>({});
-  const [theme, setTheme] = useState({
-    backgroundColor: '#F9FAFB',
-    cardColor: '#FFFFFF',
-    primaryColor: '#111827',
-    textColor: '#111827',
-  });
-  
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [passwordSaving, setPasswordSaving] = useState(false);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  
+  const { user } = useAuth();
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const p = await ProfileService.getOwnerProfile();
-        if (p) {
-          setProfile(p);
-          if (p.theme_settings) {
-            setTheme(p.theme_settings as any);
-          }
-        }
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    // Ensure auth is loaded
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      if (user) {
-        loadProfile();
-      } else {
-        setLoading(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    setError(null);
-    setSuccess(false);
-
-    try {
-      await ProfileService.updateOwnerProfile({
-        theme_settings: theme,
-      });
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    } catch (err: any) {
-      setError(err.message || 'មានបញ្ហាពេលរក្សាទុក');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handlePasswordChange = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!newPassword || newPassword.length < 6) {
-      setPasswordError('ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ ៦ តួអក្សរ');
+    if (newPassword !== confirmPassword) {
+      setMessage({ type: 'error', text: 'ពាក្យសម្ងាត់ថ្មីមិនផ្ទៀងផ្ទាត់គ្នាទេ' });
       return;
     }
-
-    setPasswordSaving(true);
-    setPasswordError(null);
-    setPasswordMessage(null);
-
+    setLoading(true);
+    setMessage(null);
     try {
-      if (!auth.currentUser) throw new Error('Not authenticated');
-      await updatePassword(auth.currentUser, newPassword);
-      setPasswordMessage('ពាក្យសម្ងាត់ត្រូវបានផ្លាស់ប្តូរដោយជោគជ័យ');
-      setNewPassword('');
+      // Not implemented on backend yet for simplicity
+      setMessage({ type: 'error', text: 'ការផ្លាស់ប្តូរពាក្យសម្ងាត់មិនទាន់ត្រូវបានបើកដំណើរការទេ' });
     } catch (err: any) {
-      setPasswordError(err.message || 'មានបញ្ហាពេលប្តូរពាក្យសម្ងាត់');
+      setMessage({ type: 'error', text: err.message || 'មានបញ្ហាពេលប្តូរពាក្យសម្ងាត់' });
     } finally {
-      setPasswordSaving(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return <div className="animate-pulse flex space-x-4"><div className="flex-1 space-y-4 py-1"><div className="h-4 bg-gray-200 rounded w-3/4"></div></div></div>;
-  }
-
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in-up">
-      <div>
-        <h1 className="text-2xl font-bold mb-6">ការកំណត់រូបរាង (Theme)</h1>
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ពណ៌ផ្ទៃខាងក្រោយ (Background Color)
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={theme.backgroundColor}
-                  onChange={(e) => setTheme({ ...theme, backgroundColor: e.target.value })}
-                  className="h-10 w-16 p-1 border border-gray-300 rounded cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={theme.backgroundColor}
-                  onChange={(e) => setTheme({ ...theme, backgroundColor: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg outline-none uppercase font-mono text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ពណ៌កាត (Card Color)
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={theme.cardColor}
-                  onChange={(e) => setTheme({ ...theme, cardColor: e.target.value })}
-                  className="h-10 w-16 p-1 border border-gray-300 rounded cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={theme.cardColor}
-                  onChange={(e) => setTheme({ ...theme, cardColor: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg outline-none uppercase font-mono text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ពណ៌ចម្បង (Primary Color / Hover)
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={theme.primaryColor}
-                  onChange={(e) => setTheme({ ...theme, primaryColor: e.target.value })}
-                  className="h-10 w-16 p-1 border border-gray-300 rounded cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={theme.primaryColor}
-                  onChange={(e) => setTheme({ ...theme, primaryColor: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg outline-none uppercase font-mono text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ពណ៌អក្សរ (Text Color)
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={theme.textColor}
-                  onChange={(e) => setTheme({ ...theme, textColor: e.target.value })}
-                  className="h-10 w-16 p-1 border border-gray-300 rounded cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={theme.textColor}
-                  onChange={(e) => setTheme({ ...theme, textColor: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg outline-none uppercase font-mono text-sm"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 p-6 rounded-2xl border border-gray-200" style={{ backgroundColor: theme.backgroundColor }}>
-            <p className="text-sm text-gray-500 mb-4 bg-white/80 inline-block px-2 py-1 rounded">មើលជាមុន (Preview)</p>
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold" style={{ color: theme.textColor }}>ឈ្មោះបង្ហាញ</h2>
-            </div>
-            <div className="p-4 rounded-xl shadow-sm border border-black/5 flex items-center justify-between" style={{ backgroundColor: theme.cardColor }}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center opacity-80" style={{ backgroundColor: theme.primaryColor, color: '#fff' }}>
-                  <span className="text-xl">★</span>
-                </div>
-                <span className="font-medium text-gray-900">តេស្ត (Test)</span>
-              </div>
-            </div>
-          </div>
-
-          {error && (
-            <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-100 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 shrink-0" />
-              <p>{error}</p>
-            </div>
-          )}
-          {success && (
-            <div className="p-4 bg-green-50 text-green-700 rounded-lg border border-green-100 flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 shrink-0" />
-              <p>បានរក្សាទុកដោយជោគជ័យ</p>
-            </div>
-          )}
-
-          <div className="pt-4 border-t border-gray-100">
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full sm:w-auto px-6 py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
-            >
-              {saving ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : (
-                <Save className="w-5 h-5" />
-              )}
-              រក្សាទុក
-            </button>
-          </div>
-        </form>
+    <div className="max-w-2xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">ការកំណត់ (Settings)</h1>
+        <p className="text-gray-500">គ្រប់គ្រងគណនី និងសុវត្ថិភាពរបស់អ្នក</p>
       </div>
 
-      <div>
-        <h2 className="text-xl font-bold mb-6">សុវត្ថិភាព (Security)</h2>
-        <form onSubmit={handlePasswordChange} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900">ព័ត៌មានគណនី</h2>
+          <p className="text-sm text-gray-500 mt-1">អ៊ីមែលដែលអ្នកកំពុងប្រើប្រាស់</p>
+        </div>
+        <div className="p-6">
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <span className="text-sm text-gray-500 block mb-1">អ៊ីមែលរបស់អ្នក</span>
+            <span className="font-medium text-gray-900">{user?.email || 'មិនមាន'}</span>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={handleUpdatePassword} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900">ផ្លាស់ប្តូរពាក្យសម្ងាត់</h2>
+          <p className="text-sm text-gray-500 mt-1">ការពារគណនីរបស់អ្នកដោយប្រើពាក្យសម្ងាត់ថ្មី</p>
+        </div>
+        
+        <div className="p-6 space-y-5">
+          {message && (
+            <div className={`p-4 rounded-xl border flex items-start gap-3 ${
+              message.type === 'success' 
+                ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
+                : 'bg-red-50 border-red-100 text-red-600'
+            }`}>
+              {message.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              )}
+              <span className="text-sm font-medium">{message.text}</span>
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              ពាក្យសម្ងាត់ថ្មី (New Password)
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">ពាក្យសម្ងាត់ថ្មី</label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 hover:bg-white focus:bg-white"
               required
               minLength={6}
-              className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all"
-              placeholder="••••••••"
-              disabled={passwordSaving}
             />
           </div>
 
-          {passwordError && (
-            <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-100 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 shrink-0" />
-              <p>{passwordError}</p>
-            </div>
-          )}
-          {passwordMessage && (
-            <div className="p-4 bg-green-50 text-green-700 rounded-lg border border-green-100 flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 shrink-0" />
-              <p>{passwordMessage}</p>
-            </div>
-          )}
-
-          <div className="pt-4 border-t border-gray-100">
-            <button
-              type="submit"
-              disabled={passwordSaving || !newPassword}
-              className="w-full sm:w-auto px-6 py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
-            >
-              {passwordSaving ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : (
-                <Key className="w-5 h-5" />
-              )}
-              ផ្លាស់ប្តូរពាក្យសម្ងាត់
-            </button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">បញ្ជាក់ពាក្យសម្ងាត់ថ្មី</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all bg-gray-50 hover:bg-white focus:bg-white"
+              required
+              minLength={6}
+            />
           </div>
-        </form>
-      </div>
+        </div>
+
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-70"
+          >
+            <Save className="w-4 h-4" />
+            រក្សាទុកការផ្លាស់ប្តូរ
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

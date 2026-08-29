@@ -1,27 +1,25 @@
-import { db, auth, storage } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Profile } from '@/types/database.types';
+
+const getToken = () => localStorage.getItem('token');
+
+const getHeaders = () => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  const token = getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
 
 export class ProfileService {
   static async getPublicProfile(profileId?: string): Promise<Profile | null> {
     try {
-      if (profileId) {
-        const docRef = doc(db, 'profiles', profileId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          return docSnap.data() as Profile;
-        }
-      } else {
-        // Fallback: Get the first profile available in the DB (for single-user apps)
-        const { collection, getDocs, limit, query } = await import('firebase/firestore');
-        const q = query(collection(db, 'profiles'), limit(1));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          return snapshot.docs[0].data() as Profile;
-        }
-      }
-      return null;
+      const response = await fetch(`/api/profiles/public/${profileId}`);
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.profile;
     } catch (err: any) {
       console.warn('Error fetching public profile:', err.message || err);
       return null;
@@ -30,28 +28,10 @@ export class ProfileService {
 
   static async getOwnerProfile(): Promise<Profile | null> {
     try {
-      const user = auth.currentUser;
-      if (!user) throw new Error('Not authenticated');
-      
-      const docRef = doc(db, 'profiles', user.uid);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        return docSnap.data() as Profile;
-      } else {
-        const newProfile: Profile = {
-          id: user.uid,
-          display_name: user.displayName || null,
-          bio: null,
-          avatar_url: user.photoURL || null,
-          cover_url: null,
-          theme_settings: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        await setDoc(docRef, newProfile);
-        return newProfile;
-      }
+      const response = await fetch('/api/profiles/me', { headers: getHeaders() });
+      if (!response.ok) throw new Error('Failed to fetch profile');
+      const data = await response.json();
+      return data.profile;
     } catch (err: any) {
       console.error(err);
       throw err;
@@ -60,20 +40,14 @@ export class ProfileService {
 
   static async updateOwnerProfile(updates: Partial<Omit<Profile, 'id'>>): Promise<Profile> {
     try {
-      const user = auth.currentUser;
-      if (!user) throw new Error('Not authenticated');
-
-      const docRef = doc(db, 'profiles', user.uid);
-      const updateData = {
-        ...updates,
-        updated_at: new Date().toISOString()
-      };
-      
-      // Use setDoc with merge to ensure it creates if not exists
-      await setDoc(docRef, updateData, { merge: true });
-      
-      const updatedSnap = await getDoc(docRef);
-      return updatedSnap.data() as Profile;
+      const response = await fetch('/api/profiles/me', {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(updates)
+      });
+      if (!response.ok) throw new Error('Failed to update profile');
+      const data = await response.json();
+      return data.profile;
     } catch (err: any) {
       console.error(err);
       throw err;
@@ -81,22 +55,9 @@ export class ProfileService {
   }
 
   static async uploadAvatar(file: File): Promise<string> {
-    try {
-      const user = auth.currentUser;
-      if (!user) throw new Error('Not authenticated');
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `avatar.${fileExt}`;
-      const filePath = `avatars/${user.uid}/${fileName}`;
-      
-      const storageRef = ref(storage, filePath);
-      await uploadBytes(storageRef, file);
-      
-      const url = await getDownloadURL(storageRef);
-      return `${url}?t=${new Date().getTime()}`;
-    } catch (err: any) {
-      console.error(err);
-      throw err;
-    }
+    // For now, since we haven't implemented file storage on Sabay Cloud,
+    // let's return a fake placeholder or throw an error indicating we need S3/bucket.
+    alert('ការបង្ហោះរូបភាពមិនទាន់អាចប្រើបានទេ (ត្រូវការ File Storage)');
+    throw new Error('Not implemented');
   }
 }

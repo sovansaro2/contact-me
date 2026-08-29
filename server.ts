@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
+import { apiRouter } from './src/api.js';
 
 async function startServer() {
   const app = express();
@@ -8,7 +9,10 @@ async function startServer() {
 
   app.use(express.json());
 
-  // API routes will go here FIRST
+  // Mount backend API routes
+  app.use('/api', apiRouter);
+
+  // Health route
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", message: "Backend is ready for Sabay Cloud!" });
   });

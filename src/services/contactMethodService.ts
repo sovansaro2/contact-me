@@ -1,21 +1,25 @@
-import { db, auth } from '@/lib/firebase';
-import { collection, doc, getDocs, setDoc, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
 import type { ContactMethod } from '@/types/database.types';
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
+const getToken = () => localStorage.getItem('token');
+
+const getHeaders = () => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  const token = getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
 
 export class ContactMethodService {
   static async getPublicContactMethods(profileId: string): Promise<ContactMethod[]> {
     try {
-      const q = query(
-        collection(db, 'contact_methods'),
-        where('profile_id', '==', profileId)
-      );
-      const snapshot = await getDocs(q);
-      const docs = snapshot.docs.map(doc => doc.data() as ContactMethod);
-      return docs
-        .filter(d => d.enabled)
-        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      const response = await fetch(`/api/contact-methods/public/${profileId}`);
+      if (!response.ok) return [];
+      const data = await response.json();
+      return data.contactMethods;
     } catch (err: any) {
       console.warn(err.message || err);
       return [];
@@ -24,16 +28,10 @@ export class ContactMethodService {
 
   static async getOwnerContactMethods(): Promise<ContactMethod[]> {
     try {
-      const user = auth.currentUser;
-      if (!user) throw new Error('Not authenticated');
-
-      const q = query(
-        collection(db, 'contact_methods'),
-        where('profile_id', '==', user.uid)
-      );
-      const snapshot = await getDocs(q);
-      const docs = snapshot.docs.map(doc => doc.data() as ContactMethod);
-      return docs.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      const response = await fetch('/api/contact-methods/me', { headers: getHeaders() });
+      if (!response.ok) throw new Error('Failed to fetch contact methods');
+      const data = await response.json();
+      return data.contactMethods;
     } catch (err: any) {
       console.error(err);
       throw err;
@@ -44,21 +42,14 @@ export class ContactMethodService {
     method: Omit<ContactMethod, 'id' | 'profile_id' | 'created_at' | 'updated_at'>
   ): Promise<ContactMethod> {
     try {
-      const user = auth.currentUser;
-      if (!user) throw new Error('Not authenticated');
-
-      const newId = generateId();
-      const payload: ContactMethod = {
-        ...method,
-        id: newId,
-        profile_id: user.uid,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      const docRef = doc(db, 'contact_methods', newId);
-      await setDoc(docRef, payload);
-      return payload;
+      const response = await fetch('/api/contact-methods', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(method)
+      });
+      if (!response.ok) throw new Error('Failed to create method');
+      const data = await response.json();
+      return data.contactMethod;
     } catch (err: any) {
       console.error(err);
       throw err;
@@ -70,18 +61,14 @@ export class ContactMethodService {
     updates: Partial<Omit<ContactMethod, 'id' | 'profile_id'>>
   ): Promise<ContactMethod> {
     try {
-      const user = auth.currentUser;
-      if (!user) throw new Error('Not authenticated');
-
-      const docRef = doc(db, 'contact_methods', id);
-      const payload = {
-        ...updates,
-        updated_at: new Date().toISOString()
-      };
-      
-      await updateDoc(docRef, payload);
-      const updatedSnap = await getDoc(docRef);
-      return updatedSnap.data() as ContactMethod;
+      const response = await fetch(`/api/contact-methods/${id}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(updates)
+      });
+      if (!response.ok) throw new Error('Failed to update method');
+      const data = await response.json();
+      return data.contactMethod;
     } catch (err: any) {
       console.error(err);
       throw err;
@@ -90,11 +77,11 @@ export class ContactMethodService {
 
   static async deleteContactMethod(id: string): Promise<void> {
     try {
-      const user = auth.currentUser;
-      if (!user) throw new Error('Not authenticated');
-
-      const docRef = doc(db, 'contact_methods', id);
-      await deleteDoc(docRef);
+      const response = await fetch(`/api/contact-methods/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+      });
+      if (!response.ok) throw new Error('Failed to delete method');
     } catch (err: any) {
       console.error(err);
       throw err;
@@ -107,14 +94,12 @@ export class ContactMethodService {
 
   static async reorderContactMethods(orderedIds: string[]): Promise<void> {
     try {
-      const user = auth.currentUser;
-      if (!user) throw new Error('Not authenticated');
-
-      const updates = orderedIds.map(async (id, index) => {
-        const docRef = doc(db, 'contact_methods', id);
-        return updateDoc(docRef, { sort_order: index });
+      const response = await fetch('/api/contact-methods/reorder', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ orderedIds })
       });
-      await Promise.all(updates);
+      if (!response.ok) throw new Error('Failed to reorder');
     } catch (err: any) {
       console.error(err);
       throw err;
