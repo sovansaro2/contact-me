@@ -1,6 +1,7 @@
 # PROJECT REPORT — `contact-me`
 
-> Generated from a full read of all 42 files in `d:\Projects\Contact\contact-me` (source, configs, schema, API, pages, services, libs).
+> Based on a full read of the project source, configs, schema, API, pages, services, and libs.
+> Sections 4, 7, and 8 reflect the current state after the security-hardening, cleanup, and PWA-install-gate pass.
 > No secrets, API keys, passwords, or `.env` values are included in this report.
 
 ---
@@ -279,31 +280,31 @@ Source: `src/db/schema.ts` — PostgreSQL, Drizzle ORM (`pgTable`), applied via 
 
 ## 4. API ENDPOINTS
 
-All endpoints live in `src/api.ts` as an Express `Router` mounted at `/api` by `server.ts`. Responses are wrapped objects (`{ token, user }`, `{ profile }`, `{ contactMethods }`, `{ contactMethod }`, `{ success }`) with DB→DTO mapping done server-side by `mapProfile()`/`mapContactMethod()` (camelCase DB → snake_case DTO). Errors return `{ error: string }` with status 400/401/404/500.
+All endpoints live in `src/api.ts` as an Express `Router` mounted at `/api` by `server.ts`. **Current security state: registration disabled (403), all contact-method mutations ownership-scoped (IDOR fixed), `JWT_SECRET` strictly required at startup, public "default" profile fallback gated behind `DEFAULT_PROFILE_USER_ID`.** Responses are wrapped objects (`{ token, user }`, `{ profile }`, `{ contactMethods }`, `{ contactMethod }`, `{ success }`) with DB→DTO mapping done server-side by `mapProfile()`/`mapContactMethod()` (camelCase DB → snake_case DTO). Errors return `{ error: string }` with status 400/401/404/500.
 
 **Auth mechanism:** the `authenticate` middleware reads `Authorization: Bearer <jwt>`, verifies it with `JWT_SECRET`, attaches `{ userId, email }` to `req.user`; returns 401 on missing header or invalid/expired token. Tokens expire after **7 days**.
 
 | # | Method | Path | Auth | Purpose |
 |---|---|---|---|---|
 | 1 | GET | `/api/health` | ❌ Public | Liveness probe → `{ status: "ok", message: "Backend is ready!" }` (declared in `server.ts`; the `applet/server.ts` duplicate has its own variant) |
-| 2 | POST | `/api/auth/register` | ❌ Public | Register: requires `email` + `password` (400 if missing); rejects duplicate email (400); hashes password with bcrypt (10 rounds); inserts into `users` **and** creates a `profiles` row (`displayName` = email prefix); returns JWT (7d) + `{ id, email }` |
+| 2 | POST | `/api/auth/register` | ❌ Public | **DISABLED (single-admin app):** immediately returns **403** `{ error: 'Registration is disabled' }`. Route is kept so old clients get a clear error; the original registration logic (bcrypt hashing, user+profile creation) is preserved commented-out inside the handler with the note `// Registration disabled: single-admin app` |
 | 3 | POST | `/api/auth/login` | ❌ Public | Login: verifies bcrypt password; returns generic `"Invalid credentials"` (400) for unknown email, missing hash, or wrong password; returns JWT (7d) + `{ id, email }` |
 | 4 | GET | `/api/auth/me` | ✅ Bearer JWT | Returns current user `{ id, email }` resolved from the token's `userId`; 404 if the user no longer exists |
-| 5 | GET | `/api/profiles/public/:id` | ❌ Public | Fetch a profile by user UUID (400/404 if not found). **Special case:** if `:id` is the literal string `"default"` or `"undefined"`, returns the **most-recently-updated profile in the entire table** (`ORDER BY updated_at DESC LIMIT 1`) |
+| 5 | GET | `/api/profiles/public/:id` | ❌ Public | Fetch a profile by user UUID (404 if not found). **Special case (now guarded):** for `:id` = `"default"`/`"undefined"`, the most-recently-updated profile is returned **only if** `DEFAULT_PROFILE_USER_ID` is set and matches it — or, when that env var is unset, only if exactly **one** profile exists in the table. Otherwise: 404 `{ error: 'Not found' }` |
 | 6 | GET | `/api/profiles/me` | ✅ Bearer JWT | Returns the authenticated user's own profile as DTO (`theme_settings` is always `null`; `created_at` is faked with `updatedAt`) |
 | 7 | PUT | `/api/profiles/me` | ✅ Bearer JWT | Upsert own profile from body fields `display_name`, `display_name_en`, `bio`, `bio_en`, `avatar_url`, `cover_url`; sets `updatedAt = now()`; inserts a new row if none exists. No field validation, no length limits |
 | 8 | GET | `/api/contact-methods/public/:id` | ❌ Public | All **enabled** methods for user `:id`, filtered in memory and sorted ascending by `parseInt(order)` |
 | 9 | GET | `/api/contact-methods/me` | ✅ Bearer JWT | **All** (including disabled) methods for the authenticated user, sorted by `parseInt(order)` |
 | 10 | POST | `/api/contact-methods` | ✅ Bearer JWT | Create a method for the authenticated user. Body: `type`, `value`, `label`, `enabled`, `sort_order` (stored in the `order` TEXT column via `sort_order?.toString() \|\| '0'`). Returns created DTO |
-| 11 | PUT | `/api/contact-methods/:id` | ✅ Bearer JWT | Partial update: only provided fields are applied (`type`, `value`, `label` → `title`, `enabled`, `sort_order` → `order`); bumps `updatedAt`. ⚠️ Filters by `id` only — **no ownership check** (see §8) |
-| 12 | DELETE | `/api/contact-methods/:id` | ✅ Bearer JWT | Deletes the method by `id`. ⚠️ **No ownership check**. Returns `{ success: true }` |
-| 13 | POST | `/api/contact-methods/reorder` | ✅ Bearer JWT | Body `{ orderedIds: string[] }` — loops through the array, setting `order = i.toString()` per id with sequential awaits (⚠️ not wrapped in a transaction; ⚠️ no ownership check) |
+| 11 | PUT | `/api/contact-methods/:id` | ✅ Bearer JWT | Partial update: only provided fields are applied (`type`, `value`, `label` → `title`, `enabled`, `sort_order` → `order`); bumps `updatedAt`. **Ownership enforced (IDOR fix):** the `where` clause also filters by `eq(contactMethods.userId, req.user.userId)`; returns **404** if no row matches (no existence leak) |
+| 12 | DELETE | `/api/contact-methods/:id` | ✅ Bearer JWT | Deletes the method by `id` **owned by the authenticated user** (ownership filter in the `where` clause + `.returning()`); returns **404** if nothing was deleted, otherwise `{ success: true }` |
+| 13 | POST | `/api/contact-methods/reorder` | ✅ Bearer JWT | Body `{ orderedIds: string[] }` — loops through the array, setting `order = i.toString()` per id; each UPDATE is scoped to the authenticated user (`and(eq(id), eq(userId))`). ⚠️ Still not wrapped in a transaction (known issue, §8) |
 
 ### 4.1 Endpoint inventory summary
 
 - **Total:** 13 endpoints (1 health, 3 auth, 3 profiles, 6 contact-methods).
-- **Public (no auth):** 5 — health, register, login, public profile, public contact methods.
-- **Authenticated (Bearer JWT):** 8 — me, my profile (GET/PUT), my methods (GET), create/update/delete/reorder methods.
+- **Public (no auth):** 5 — health, register (**always 403 — disabled**), login, public profile (**"default" fallback guarded**), public contact methods.
+- **Authenticated (Bearer JWT):** 8 — me, my profile (GET/PUT), my methods (GET), create/update/delete/reorder methods (**update/delete/reorder are ownership-scoped as of the IDOR fix**).
 - **Not implemented anywhere:** password change, email change, account deletion, single-method GET, logout/revocation, pagination, rate limiting.
 
 ### 4.2 DTO mapping (DB ↔ API)
@@ -449,19 +450,14 @@ Both services **duplicate identical helper code** (`getToken()` / `getHeaders()`
 
 | Variable | Used by | Required? | Status |
 |---|---|---|---|
-| `DATABASE_URL` | `src/db/index.ts` (pg `Pool`), `drizzle.config.ts` | **Yes — actually required** (PostgreSQL connection string) | ⚠️ Not listed in `.env.example` |
-| `JWT_SECRET` | `src/api.ts` | **Yes in production** (JWT signing/verification) | ⚠️ Falls back to a hardcoded literal in code if unset — not listed in `.env.example` |
+| `DATABASE_URL` | `src/db/index.ts` (pg `Pool`), `drizzle.config.ts` | **Yes — required** (PostgreSQL connection string) | Listed in `.env.example` |
+| `JWT_SECRET` | `src/api.ts` | **Yes — strictly required** (module-load guard in `src/api.ts`: the server throws `'JWT_SECRET environment variable is required'` at startup if unset — hardcoded fallback removed) | Listed in `.env.example` |
 | `NODE_ENV` | `server.ts` | Yes in production (`production` ⇒ serve `dist/` instead of Vite middleware) | |
-| `PORT` | — | Not implemented | ❌ Hardcoded to `3000` in both `server.ts` and `app/applet/server.ts` |
-| `VITE_FIREBASE_API_KEY` | — | Not used | ⚠️ Listed in `.env.example` but **no Firebase code exists** anywhere |
-| `VITE_FIREBASE_AUTH_DOMAIN` | — | Not used | ⚠️ Same as above |
-| `VITE_FIREBASE_PROJECT_ID` | — | Not used | ⚠️ Same as above |
-| `VITE_FIREBASE_STORAGE_BUCKET` | — | Not used | ⚠️ Same as above |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | — | Not used | ⚠️ Same as above |
-| `VITE_FIREBASE_APP_ID` | — | Not used | ⚠️ Same as above |
+| `PORT` | `server.ts` | Optional | Now supported: `const port = Number(process.env.PORT) || 3000;` — the actual port is logged at startup |
+| `DEFAULT_PROFILE_USER_ID` | `src/api.ts` | Optional | Designates which user's profile the public "default" fallback may expose; when unset, the fallback only works if exactly one profile exists |
 | `DISABLE_HMR` | `vite.config.ts` | Optional | When `'true'`, disables HMR + file watching (AI Studio agent-edit mode) |
 
-`.gitignore` correctly excludes `.env*` (keeping `.env.example`). **No `.env` file exists** in the workspace at analysis time.
+`.env.example` has been rewritten to contain exactly the five variables above (`DATABASE_URL`, `JWT_SECRET`, `NODE_ENV`, `PORT`, `DEFAULT_PROFILE_USER_ID`) — the six stale `VITE_FIREBASE_*` entries were removed (no Firebase code exists in the project). `.gitignore` correctly excludes `.env*` (keeping `.env.example`). **No `.env` file exists** in the workspace — the backend will refuse to start until `JWT_SECRET` and `DATABASE_URL` are provided.
 
 ### 7.2 npm Scripts
 
@@ -478,13 +474,14 @@ Both services **duplicate identical helper code** (`getToken()` / `getHeaders()`
 ### 7.3 Deployment Process & Targets
 
 1. **Primary target — self-hosted Node ("Sabay Cloud" per code comments):**
-   - Provision PostgreSQL; set `DATABASE_URL` (and `JWT_SECRET`, `NODE_ENV=production`) as environment variables.
-   - `npm install` → `npm run db:push` (create tables) → `npm run build` → `npm start`.
-   - The single Express process serves the API and the SPA; bind is `0.0.0.0:3000`.
+   - Provision PostgreSQL; set `DATABASE_URL` and `JWT_SECRET` (**both strictly required — the server throws at startup without them**), plus `NODE_ENV=production`, optional `PORT` and `DEFAULT_PROFILE_USER_ID`.
+   - `npm install` (npm is the authoritative package manager — `bun.lock` was removed) → `npm run db:push` (create tables) → `npm run build` → `npm start`.
+   - The single Express process serves the API and the SPA; binds to `0.0.0.0` on `PORT` (default 3000, logged at startup).
 2. **Alternative — pure static SPA hosting** (documented in `README.md` + `public/_redirects`): Netlify/Cloudflare Pages (`/* /index.html 200`), Vercel rewrites, Firebase Hosting rewrites, Apache `FallbackResource`, Nginx `try_files`. ⚠️ This path leaves `/api` without a backend — a separate API host would be required (and CORS does not exist).
-3. **PWA:** `vite-plugin-pwa` (`registerType: 'autoUpdate'`) generates the manifest + service worker in every client build; icons are included from `public/`.
+3. **PWA:** `vite-plugin-pwa` (`registerType: 'autoUpdate'`) generates the manifest + service worker in every client build; the service worker is registered via `registerSW({ immediate: true })` in `src/main.tsx`. Manifest icons: `pwa-192x192.png`, `pwa-512x512.png`, `pwa-512x512-maskable.png` (favicon.png removed from the manifest). iOS meta tags (apple-touch-icon, `apple-mobile-web-app-*`) added to `index.html`. The `InstallGate` component (`src/components/Install.tsx`) forces mobile visitors to install before using the app.
 4. **SEO/social:** only static Open Graph/Twitter tags in `index.html`; dynamic per-profile OG metadata is explicitly deferred (see README).
 5. **Migrations:** none kept — schema changes go straight to the DB via `drizzle-kit push`.
+6. **First admin:** registration is disabled (single-admin app) — the initial admin account must be seeded directly into the `users`/`profiles` tables (bcrypt hash, 10 rounds), e.g. via a one-off script.
 
 ---
 
@@ -498,6 +495,16 @@ Both services **duplicate identical helper code** (`getToken()` / `getHeaders()`
 - **Public contact card:** skeleton loading state, error state with retry, KH/EN language switcher, brand-colored animated cards (Motion stagger/spring), per-type descriptions and localized labels, correct deep links via `getActionUrl`, safe-area-aware mobile layout.
 - **PWA:** manifest, icons (incl. maskable), auto-update service worker; SPA fallback for static hosts; production Express serves SPA + API from one process.
 - **API DTO layer:** server-side `mapProfile`/`mapContactMethod` keep the camelCase DB schema and snake_case frontend types in sync.
+
+**Recently completed (security-hardening, cleanup & PWA pass):**
+- **Public registration disabled** — `POST /api/auth/register` returns 403 `{ error: 'Registration is disabled' }`; original logic preserved commented-out (single-admin app).
+- **IDOR fixed** — `PUT/DELETE /api/contact-methods/:id` and `/reorder` are now scoped to the authenticated user and return 404 on no match.
+- **`JWT_SECRET` strictly required** — hardcoded fallback removed; server throws `'JWT_SECRET environment variable is required'` at startup when missing.
+- **Public "default" profile guarded** — gated behind `DEFAULT_PROFILE_USER_ID` (or the single-profile rule).
+- **InstallGate PWA gate** (`src/components/Install.tsx`) — mobile visitors must install before using the app: Android `beforeinstallprompt` flow with "🚀 ដំឡើងឥឡូវនេះ" button, iOS Safari numbered instructions, in-app-browser detection, `?gate=off` test bypass; wrapped around the router inside `AuthProvider`.
+- **Service worker registration** via `registerSW({ immediate: true })` in `src/main.tsx` (+ `src/vite-env.d.ts` references); iOS PWA meta tags added to `index.html`; manifest icons fixed (favicon.png removed, `purpose: 'maskable'`).
+- **Dead code & dependency cleanup** — `app/applet/` and `bun.lock` deleted; `@google/genai` removed; `vite`, `@vitejs/plugin-react`, `@tailwindcss/vite` moved to devDependencies; `.env.example` rewritten (Firebase vars removed); `PORT` now configurable and logged.
+- **TypeScript clean** — all 4 pre-existing `tsc` errors fixed; `npm run lint` passes with zero errors and `npm run build` succeeds (PWA `dist/sw.js` + `dist/server.cjs` generated).
 
 ### 8.2 In-Progress / Stubs
 
@@ -520,14 +527,14 @@ Both services **duplicate identical helper code** (`getToken()` / `getHeaders()`
 
 ### 8.4 Known Bugs & Code Smells (verified in code)
 
-1. **Duplicate/conflicting server files** — `app/applet/server.ts` is a stale copy with only a health route and no API/DB wiring; running it instead of root `server.ts` breaks the app. Should be deleted.
-2. **`/api/health` declared after the `/api` router mount** in `server.ts` — it only works because no `/api/health` route exists inside the router; fragile ordering, and health is defined in two different files across the two servers.
+1. ~~Duplicate/conflicting server files~~ — **RESOLVED**: the stale `app/applet/server.ts` (and the `app/` folder) has been deleted; `server.ts` is the only server entry.
+2. **`/api/health` declared after the `/api` router mount** in `server.ts` — it only works because no `/api/health` route exists inside the router; fragile ordering. (The duplicate server file that also defined a health route was deleted.)
 3. **`order` stored as TEXT** — sorting relies on `parseInt` at every read; a non-numeric value silently becomes `0` (`parseInt(order) || 0` in the mapper) and can scramble ordering. Should be an integer column with an index.
 4. **Reorder is not transactional** — `/contact-methods/reorder` issues N sequential UPDATEs; a mid-loop failure leaves rows with duplicate/intermediate order values.
 5. **Global 10 MB JSON body limit** (`express.json({ limit: "10mb" })`) applies to *all* endpoints — a DoS-friendly workaround for base64 avatars.
-6. **Dependency hygiene:** `vite` listed in both dependencies and devDependencies; `@vitejs/plugin-react` and `@tailwindcss/vite` misplaced as runtime deps; `@google/genai` unused; `autoprefixer` redundant with Tailwind v4.
-7. **Two lockfiles** (`bun.lock` + `package-lock.json`) — ambiguous package manager.
-8. **`.env.example` is misleading** — lists six Firebase vars that nothing consumes; omits the actually required `DATABASE_URL` and `JWT_SECRET`.
+6. ~~Dependency hygiene~~ — **RESOLVED**: `@google/genai` removed from dependencies; `vite`, `@vitejs/plugin-react`, and `@tailwindcss/vite` moved to devDependencies. (`autoprefixer` is still redundant with Tailwind v4.)
+7. ~~Two lockfiles~~ — **RESOLVED**: `bun.lock` deleted; `package-lock.json` (npm) is the authoritative lockfile.
+8. ~~`.env.example` is misleading~~ — **RESOLVED**: rewritten to exactly `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV`, `PORT`, `DEFAULT_PROFILE_USER_ID` (Firebase vars removed).
 9. **Fake `created_at`** — `mapProfile` sets `created_at = updatedAt` (the `profiles` table has no created-at column, but the DTO claims one).
 10. **Fragile "default profile" contract** — `PublicPage` with no `:id` calls `/api/profiles/public/undefined`, which only works because the server string-matches the literal `"undefined"`.
 11. **Duplicated auth-header code** in both services — no shared fetch wrapper; no 401 handling/auto-logout on expired tokens.
@@ -540,12 +547,12 @@ Both services **duplicate identical helper code** (`getToken()` / `getHeaders()`
 
 ### 8.5 Security Concerns (ranked by severity)
 
-1. **Hardcoded JWT fallback secret** — `src/api.ts` uses `process.env.JWT_SECRET || '<literal fallback string>'`. If `JWT_SECRET` is unset in production, anyone who reads this repository can mint valid admin tokens. **Critical** — the server should fail fast when the variable is missing.
-2. **Missing object-level authorization (IDOR)** — `PUT/DELETE /api/contact-methods/:id` and `POST /api/contact-methods/reorder` filter by id only. Any authenticated user can **update, delete, or reorder another user's contact methods** by supplying their UUIDs. All `where` clauses must also include `eq(contactMethods.userId, req.user.userId)`.
-3. **Open registration** — anyone can create an admin account (no invite/allow-list), and `GET /profiles/public/default` exposes the most recently updated profile of *any* user — for a multi-user deployment this leaks other people's profiles.
+1. ~~Hardcoded JWT fallback secret~~ — **RESOLVED**: the fallback was removed; `src/api.ts` now throws `'JWT_SECRET environment variable is required'` at module load if the variable is missing.
+2. ~~Missing object-level authorization (IDOR)~~ — **RESOLVED**: all contact-method mutations (`PUT/DELETE /:id`, `/reorder`) now include `eq(contactMethods.userId, req.user.userId)` in their `where` clauses and return 404 on no match (no existence leak).
+3. ~~Open registration~~ — **MITIGATED**: `POST /api/auth/register` now returns 403 (registration disabled), and the public `"default"` profile fallback is gated behind `DEFAULT_PROFILE_USER_ID` (or the single-profile rule). Follow-up: seed the first admin directly into the database.
 4. **JWT stored in `localStorage`** — vulnerable to XSS token theft; no refresh tokens, rotation, or revocation (stateless 7-day JWTs). An httpOnly cookie would be safer.
 5. **Raw error messages to clients** — every catch returns `res.status(500).json({ error: err.message })`, potentially leaking internal details (SQL errors, etc.).
-6. **No server-side password policy** — only the browser enforces requirements; register accepts any non-empty password.
+6. **No server-side password policy** — the change-password endpoint does not exist yet; when credentials handling is next touched, add server-side validation (min length, email format).
 7. **No rate limiting / brute-force protection** on `/auth/login` or `/auth/register`.
 8. **Base64 avatars in the DB** — combined with the 10 MB JSON limit and unvalidated `avatar_url`, this enables storage-flooding of the `profiles` table.
 9. **No security headers / HTTPS enforcement** in the server itself (no `helmet`, no `trust proxy` config).
@@ -553,18 +560,18 @@ Both services **duplicate identical helper code** (`getToken()` / `getHeaders()`
 
 ### 8.6 Overall Assessment
 
-A compact, coherent, and genuinely functional MVP — the core "link-in-bio card" flow works end-to-end with clean separation (schema → API → services → pages) and thoughtful UX details (skeletons, optimistic updates, bilingual labels). Before any real multi-user deployment, the top priorities should be:
+A compact, coherent, and genuinely functional MVP — the core "link-in-bio card" flow works end-to-end with clean separation (schema → API → services → pages) and thoughtful UX details (skeletons, optimistic updates, bilingual labels). The critical security holes identified in the original audit have been closed: registration disabled, `JWT_SECRET` required at startup, IDOR fixed, the public "default" profile guarded, the InstallGate PWA gate added, dead code/dependencies removed, and the type-check now passes with zero errors. Remaining priorities:
 
-1. Require `JWT_SECRET` at startup (remove the hardcoded fallback).
-2. Add ownership checks to all contact-method mutations (IDOR fix).
-3. Implement real avatar file storage and the password-change endpoint.
-4. Fix `.env.example` to list `DATABASE_URL`/`JWT_SECRET` and drop the Firebase vars.
-5. Convert `order` to an integer column and make reorder transactional.
-6. Add ESLint, tests, rate limiting, and security headers.
+1. Seed the first admin account (registration is disabled — requires a DB-level seed script).
+2. Implement real avatar file storage and the password-change endpoint.
+3. Convert the `order` column to an integer and make reorder transactional (**still TEXT — known issue**).
+4. Reduce the global 10 MB JSON body limit once avatars move out of the database.
+5. Add ESLint, tests, rate limiting, and security headers (`helmet`).
+6. Replace raw `err.message` 500 responses with generic messages + server-side logging.
 
 ---
 
-*Report generated from static analysis of all 42 project files. Dependencies were not installed in the workspace at analysis time (`node_modules` absent), so no live build/type-check was executed. No secrets, API keys, passwords, or `.env` values are contained in this report.*
+*Report based on static analysis of the project, updated after the security-hardening, cleanup, and PWA-install-gate pass (sections 4, 7, 8 reflect the current state). Dependencies are now installed and verified: `npm run lint` passes with zero type errors and `npm run build` succeeds. No secrets, API keys, passwords, or `.env` values are contained in this report.*
 
 
 

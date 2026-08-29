@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { ProfileService } from '@/services/profileService';
 import { ContactMethodService } from '@/services/contactMethodService';
 import type { Profile, ContactMethod } from '@/types/database.types';
-import { getActionUrl } from '@/lib/links';
+import { getActionUrl, openContactLink } from '@/lib/links';
 import { getIconForType, getColorForType } from '@/lib/iconMapping';
 import { 
   Link as LinkIcon,
@@ -266,6 +266,10 @@ export default function PublicPage() {
                   href={actionUrl}
                   target={actionUrl.startsWith('http') ? '_blank' : undefined}
                   rel="noopener noreferrer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openContactLink(method.type, method.value);
+                  }}
                   aria-label={`ទាក់ទងតាម ${method.label}`}
                   className="flex items-center p-[20px] rounded-[28px] bg-white/80 backdrop-blur-xl shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] border border-gray-100/60 hover:shadow-md hover:bg-white transition-all duration-300 group focus:outline-none focus:ring-2 focus:ring-offset-2"
                   style={{ '--tw-ring-color': brandColor } as CSSProperties}

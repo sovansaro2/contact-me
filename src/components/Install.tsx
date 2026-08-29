@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -51,6 +51,10 @@ export default function InstallGate({ children }: { children: ReactNode }) {
   const [iosSafari] = useState<boolean>(isIosSafari);
   const [gateOff, setGateOff] = useState<boolean>(() => sessionStorage.getItem(GATE_OFF_KEY) === '1');
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [redirectFailed, setRedirectFailed] = useState<boolean>(false);
+  const [copied, setCopied] = useState<boolean>(false);
+  const [telegram] = useState<boolean>(() => /telegram/i.test(navigator.userAgent));
+  const redirectAttempted = useRef(false);
 
   // Test bypass: ?gate=off stores a per-session flag so the gate stays off while testing
   useEffect(() => {
@@ -80,6 +84,40 @@ export default function InstallGate({ children }: { children: ReactNode }) {
     }
   };
 
+  // ANDROID in-app browser: attempt a one-time automatic redirect to Chrome;
+  // if still on the page after 2.5s (redirect failed), fall back to manual copy/open instructions.
+  useEffect(() => {
+    if (!inApp || platform !== 'android' || redirectAttempted.current) return;
+    redirectAttempted.current = true;
+    window.location.href =
+      'intent://' + window.location.host + window.location.pathname + '#Intent;scheme=https;package=com.android.chrome;end';
+    const timer = setTimeout(() => setRedirectFailed(true), 2500);
+    return () => clearTimeout(timer);
+  }, [inApp, platform]);
+
+  const copyLink = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        throw new Error('Clipboard API unavailable');
+      }
+    } catch {
+      // Fallback: execCommand textarea trick (clipboard API may be blocked in in-app browsers)
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   // Desktop, already installed (standalone), or test bypass → render children directly
   if (platform === 'desktop' || standalone || gateOff) {
     return <>{children}</>;
@@ -99,15 +137,59 @@ export default function InstallGate({ children }: { children: ReactNode }) {
           </p>
         </div>
 
-        {/* In-app browsers: cannot install — open in a real browser first */}
-        {inApp ? (
+        {/* ANDROID in-app browser: auto-redirect to Chrome, then manual copy/open fallback */}
+        {inApp && platform === 'android' ? (
           <div className="bg-white/95 text-gray-900 rounded-2xl p-6 shadow-xl">
-            <h2 className="font-bold mb-2">បើកក្នុង Browser ពិតជាមុនសិន</h2>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              អ្នកកំពុងបើកតាម App ផ្សេង (Facebook, Instagram, Line, ...) ដែលមិនអាចដំឡើងបានទេ។
-              សូមចុចម៉ឺនុយ <strong>⋮</strong> ឬ <strong>…</strong> នៅខាងលើ រួចជ្រើសរើស
-              <strong> "Open in browser"</strong> ដើម្បីបើកក្នុង Chrome ឬ Safari ជាមុនសិន។
-            </p>
+            {!redirectFailed ? (
+              <div className="flex flex-col items-center py-4">
+                <div className="w-10 h-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin mb-4"></div>
+                <p className="text-sm font-medium text-gray-700">កំពុងបើកក្នុង Chrome...</p>
+              </div>
+            ) : (
+              <>
+                <h2 className="font-bold mb-2">សូមបើកក្នុង Chrome ដោយដៃ</h2>
+                <p className="text-sm text-gray-600 mb-4">ការបើកស្វ័យប្រវត្តិមិនបានដំណើរការទេ។ សូមចម្លង Link រួចបើកក្នុង Chrome។</p>
+                <button
+                  onClick={copyLink}
+                  className="w-full py-3.5 bg-white text-gray-900 font-bold rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  {copied ? '✅ ចម្លងរួចរាល់!' : '📋 ចម្លង Link'}
+                </button>
+                <p className="text-xs text-gray-500 mt-3 leading-relaxed">
+                  បើកកម្មវិធី <strong>Chrome</strong> → ចុច address bar យូរៗ → <strong>Paste</strong> → បើក។ បន្ទាប់មកអ្នកនឹងឃើញការណែនាំដំឡើង។
+                </p>
+              </>
+            )}
+          </div>
+        ) : inApp ? (
+          /* iOS (and other) in-app browsers: copy the link, then open in Safari */
+          <div className="bg-white/95 text-gray-900 rounded-2xl p-6 shadow-xl">
+            <h2 className="font-bold mb-4">សូមបើកក្នុង Safari ជាមុនសិន</h2>
+            <button
+              onClick={copyLink}
+              className="w-full py-3.5 bg-white text-gray-900 font-bold rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            >
+              {copied ? '✅ ចម្លងរួចរាល់!' : '📋 ចម្លង Link'}
+            </button>
+            <ol className="space-y-3 text-sm text-gray-700 mt-5">
+              <li className="flex gap-3 items-center">
+                <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">1</span>
+                <span>ចុច <strong>"ចម្លង Link"</strong> ខាងលើ។</span>
+              </li>
+              <li className="flex gap-3 items-center">
+                <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">2</span>
+                <span>បើកកម្មវិធី <strong>Safari</strong> → ចុចបន្ថែមលើ address bar យូរៗ → paste → បើក។</span>
+              </li>
+              <li className="flex gap-3 items-center">
+                <span className="w-6 h-6 shrink-0 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">3</span>
+                <span>បន្ទាប់មកអ្នកនឹងឃើញការណែនាំដំឡើង។</span>
+              </li>
+            </ol>
+            {telegram && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs leading-relaxed">
+                💡 ក្នុង Telegram៖ ចុច ⋯ មុំខាងស្តាំលើ → <strong>Open in Safari</strong>
+              </div>
+            )}
           </div>
         ) : platform === 'android' ? (
 
