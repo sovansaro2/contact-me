@@ -150,39 +150,43 @@ export default function PublicPage() {
       <div className="absolute top-[20%] right-[-10%] h-[50%] w-[50%] rounded-full bg-transparent blur-[100px] pointer-events-none dark:bg-transparent" />
 
       <div className="relative z-10 mx-auto w-full max-w-[420px] px-4">
+        <header className="pt-[calc(0.75rem+env(safe-area-inset-top))]">
+          <div className="flex items-center justify-end">
+            <div className="flex items-center rounded-full border border-white/10 bg-[#1f1b17]/70 px-1.5 py-1 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+              <button
+                type="button"
+                aria-label="Switch to Khmer"
+                onClick={() => setLang('kh')}
+                className={`rounded-full px-3 py-1.5 text-[13px] font-bold transition-all ${lang === 'kh' ? 'bg-white/10 text-[#f5ead3] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]' : 'text-[#a89a80] hover:text-[#f5ead3]'}`}
+              >
+                KH
+              </button>
+              <button
+                type="button"
+                aria-label="Switch to English"
+                onClick={() => setLang('en')}
+                className={`rounded-full px-3 py-1.5 text-[13px] font-bold transition-all ${lang === 'en' ? 'bg-white/10 text-[#f5ead3] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]' : 'text-[#a89a80] hover:text-[#f5ead3]'}`}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                aria-label="Toggle theme"
+                onClick={toggleTheme}
+                className="ml-1.5 rounded-full bg-white/5 p-2 text-[#f5ead3] transition-colors hover:text-white"
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+        </header>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="relative mb-10 flex flex-col items-center text-center"
         >
-          <div className="absolute right-2 top-0 z-20 flex items-center rounded-full border border-black/5 bg-white/70 p-1 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-            <button
-              type="button"
-              aria-label="Switch to Khmer"
-              onClick={() => setLang('kh')}
-              className={`rounded-full px-3 py-1.5 text-[13px] font-bold transition-all ${lang === 'kh' ? 'bg-white text-gray-900 shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:bg-white/10 dark:text-[#f5ead3]' : 'text-gray-500 hover:text-gray-900 dark:text-[#a89a80] dark:hover:text-[#f5ead3]'}`}
-            >
-              KH
-            </button>
-            <button
-              type="button"
-              aria-label="Switch to English"
-              onClick={() => setLang('en')}
-              className={`rounded-full px-3 py-1.5 text-[13px] font-bold transition-all font-['Rajdhani'] ${lang === 'en' ? 'bg-white text-gray-900 shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:bg-white/10 dark:text-[#f5ead3]' : 'text-gray-500 hover:text-gray-900 dark:text-[#a89a80] dark:hover:text-[#f5ead3]'}`}
-            >
-              EN
-            </button>
-            <button
-              type="button"
-              aria-label="Toggle theme"
-              onClick={toggleTheme}
-              className="ml-2 rounded-full border border-black/5 bg-white/70 p-2 text-gray-700 shadow-sm transition-colors hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-[#f5ead3] dark:hover:text-white"
-            >
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-          </div>
-
           {profile?.avatar_url ? (
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -291,11 +295,11 @@ export default function PublicPage() {
                   style={{ '--tw-ring-color': brandColor } as CSSProperties}
                 >
                   <div
-                    className="relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[18px] transition-colors duration-300"
+                    className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-[18px] transition-colors duration-300 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]"
                     style={{ backgroundColor: `${brandColor}15` }}
                   >
                     <Icon
-                      className="relative z-10 h-[26px] w-[26px] transition-transform duration-300 group-hover:scale-110"
+                      className="relative z-10 h-[26px] w-[26px] shrink-0 transition-transform duration-300 group-hover:scale-110"
                       style={{ color: brandColor }}
                     />
                   </div>
