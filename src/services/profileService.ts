@@ -6,19 +6,24 @@ import type { Profile } from '@/types/database.types';
 export class ProfileService {
   static async getPublicProfile(profileId?: string): Promise<Profile | null> {
     try {
-      // For this app, if profileId is empty, we just fallback to the auth user if any, 
-      // but if it's public we might just have a hardcoded ID or the URL parameter.
-      // Assuming a single-user app or we fetch the owner's profile based on auth for simplicity.
-      // Since it's a contact-me page, we might just fetch the single user profile if profileId is passed.
-      if (!profileId) return null;
-      const docRef = doc(db, 'profiles', profileId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        return docSnap.data() as Profile;
+      if (profileId) {
+        const docRef = doc(db, 'profiles', profileId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          return docSnap.data() as Profile;
+        }
+      } else {
+        // Fallback: Get the first profile available in the DB (for single-user apps)
+        const { collection, getDocs, limit, query } = await import('firebase/firestore');
+        const q = query(collection(db, 'profiles'), limit(1));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          return snapshot.docs[0].data() as Profile;
+        }
       }
       return null;
     } catch (err: any) {
-      console.warn(err.message || err);
+      console.warn('Error fetching public profile:', err.message || err);
       return null;
     }
   }
