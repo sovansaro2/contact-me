@@ -143,11 +143,11 @@ export default function PublicPage() {
 
   return (
     <div
-      className={`min-h-screen relative overflow-hidden bg-[#fdfcfa] text-stone-800 transition-colors duration-300 selection:bg-gray-200 pb-[calc(3rem+env(safe-area-inset-bottom))] pt-[calc(3rem+env(safe-area-inset-top))] dark:bg-[#1a1612] dark:text-[#f5ead3] ${lang === 'en' ? "font-['Rajdhani'] font-medium" : "font-sans"}`}
+      className={`min-h-screen relative overflow-hidden bg-[#fdfcfa] text-stone-800 transition-colors duration-300 selection:bg-gray-200 pb-[calc(3rem+env(safe-area-inset-bottom))] pt-[calc(3rem+env(safe-area-inset-top))] dark:bg-[#0f0d0b] dark:text-[#f5ead3] ${lang === 'en' ? "font-['Rajdhani'] font-medium" : "font-sans"}`}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(ellipse_at_center,rgba(217,164,65,0.22),transparent_65%)] opacity-0 transition-opacity duration-300 dark:opacity-100" />
-      <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[60%] rounded-full bg-blue-100/40 blur-[100px] pointer-events-none dark:bg-transparent" />
-      <div className="absolute top-[20%] right-[-10%] h-[50%] w-[50%] rounded-full bg-amber-100/40 blur-[100px] pointer-events-none dark:bg-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(ellipse_at_center,rgba(217,164,65,0.24),transparent_65%)] opacity-0 transition-opacity duration-300 dark:opacity-100" />
+      <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[60%] rounded-full bg-transparent blur-[100px] pointer-events-none dark:bg-transparent" />
+      <div className="absolute top-[20%] right-[-10%] h-[50%] w-[50%] rounded-full bg-transparent blur-[100px] pointer-events-none dark:bg-transparent" />
 
       <div className="relative z-10 mx-auto w-full max-w-[420px] px-4">
         <motion.div
@@ -194,7 +194,7 @@ export default function PublicPage() {
               <img
                 src={profile.avatar_url}
                 alt={displayName}
-                className="relative z-10 h-[124px] w-[124px] rounded-full border-[4px] border-white bg-white object-cover shadow-sm dark:border-[#d9a441]"
+                className="relative z-10 h-[124px] w-[124px] rounded-full border-[3px] border-[#d9a441] bg-[#1a1612] object-cover shadow-[0_0_0_1px_rgba(217,164,65,0.25)] dark:border-[#d9a441]"
                 loading="eager"
               />
             </motion.div>
@@ -203,7 +203,7 @@ export default function PublicPage() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="relative z-10 mb-6 flex h-[124px] w-[124px] items-center justify-center rounded-full border-[4px] border-white bg-gradient-to-tr from-gray-200 to-gray-100 shadow-sm dark:border-[#d9a441] dark:from-[#d9a441]/20 dark:to-[#d9a441]/5"
+              className="relative z-10 mb-6 flex h-[124px] w-[124px] items-center justify-center rounded-full border-[3px] border-[#d9a441] bg-gradient-to-tr from-gray-200 to-gray-100 shadow-[0_0_0_1px_rgba(217,164,65,0.25)] dark:border-[#d9a441] dark:from-[#d9a441]/20 dark:to-[#d9a441]/5"
             >
               <span className="text-[48px] font-medium text-gray-400 dark:text-[#f5ead3]">
                 {displayName.charAt(0).toUpperCase()}
@@ -250,7 +250,7 @@ export default function PublicPage() {
                 hidden: { opacity: 0, y: 20 },
                 visible: { opacity: 1, y: 0 }
               }}
-              className="flex flex-col items-center justify-center rounded-[32px] border border-[#eee7db] bg-white p-10 text-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] transition-colors duration-300 dark:border-[#d9a441]/15 dark:bg-white/[0.055] dark:backdrop-blur"
+              className="flex flex-col items-center justify-center rounded-[32px] border border-[#eee7db] bg-white p-10 text-center shadow-[0_2px_10px_rgba(0,0,0,0.03)] transition-colors duration-300 dark:border-[#d9a441]/15 dark:bg-[#201b15]/90 dark:backdrop-blur"
             >
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[#eee7db] bg-[#f7f4ee] shadow-sm dark:border-[#d9a441]/15 dark:bg-[#d9a441]/12">
                 <LinkIcon className="h-7 w-7 text-stone-400 dark:text-[#9a8b6f]" />
@@ -287,29 +287,29 @@ export default function PublicPage() {
                     openContactLink(method.type, method.value);
                   }}
                   aria-label={`ទាក់ទងតាម ${method.label}`}
-                  className="group flex items-center rounded-[28px] border border-[#eee7db] bg-white p-[20px] shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] transition-all duration-300 hover:bg-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 dark:border-[#d9a441]/15 dark:bg-white/[0.055] dark:backdrop-blur dark:hover:bg-white/[0.065]"
+                  className="group flex items-center rounded-[24px] border border-[#eee7db] bg-white p-[18px] shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] transition-all duration-300 hover:bg-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 dark:border-[#d9a441]/15 dark:bg-[#1d1712]/90 dark:backdrop-blur dark:hover:bg-[#241f1a]"
                   style={{ '--tw-ring-color': brandColor } as CSSProperties}
                 >
                   <div
-                    className="relative h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[20px] transition-colors duration-300"
+                    className="relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[18px] transition-colors duration-300"
                     style={{ backgroundColor: `${brandColor}15` }}
                   >
                     <Icon
-                      className="relative z-10 h-[28px] w-[28px] transition-transform duration-300 group-hover:scale-110"
+                      className="relative z-10 h-[26px] w-[26px] transition-transform duration-300 group-hover:scale-110"
                       style={{ color: brandColor }}
                     />
                   </div>
 
                   <div className="ml-[20px] min-w-0 flex-1">
                     <h2
-                      className="truncate text-[18px] font-medium text-stone-800 dark:text-[#f0e6d2]"
+                      className="truncate text-[18px] font-medium text-stone-800 dark:text-[#f2e9d7]"
                       style={{ fontFamily: "'Rajdhani', 'Battambang', 'Khmer OS Battambang', sans-serif" }}
                     >
                       {localizedLabel}
                     </h2>
                     {description && (
                       <p
-                        className="mt-0.5 truncate text-[15px] font-medium text-stone-400 dark:text-[#9a8b6f]"
+                        className="mt-0.5 truncate text-[15px] font-medium text-stone-400 dark:text-[#b8a689]"
                         style={{ fontFamily: "'Rajdhani', 'Battambang', 'Khmer OS Battambang', sans-serif" }}
                       >
                         {description}
