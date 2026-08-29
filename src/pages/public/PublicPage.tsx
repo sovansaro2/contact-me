@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { ProfileService } from '@/services/profileService';
 import { ContactMethodService } from '@/services/contactMethodService';
 import type { Profile, ContactMethod } from '@/types/database.types';
@@ -36,6 +37,7 @@ const getMethodDescription = (type: string, value: string) => {
 };
 
 export default function PublicPage() {
+  const { id } = useParams<{ id: string }>();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [contactMethods, setContactMethods] = useState<ContactMethod[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +48,7 @@ export default function PublicPage() {
       setLoading(true);
       setError(null);
       
-      const p = await ProfileService.getPublicProfile();
+      const p = await ProfileService.getPublicProfile(id);
       if (!p) {
         setProfile(null);
         setContactMethods([]);

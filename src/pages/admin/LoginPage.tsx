@@ -22,7 +22,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password })
       });
       
-      const data = await response.json();
+      let data; try { const text = await response.text(); data = text ? JSON.parse(text) : {}; } catch(e) { throw new Error("បញ្ហាបច្ចេកទេស (Server Error)"); }
       if (!response.ok) {
         throw new Error(data.error || 'Authentication failed');
       }

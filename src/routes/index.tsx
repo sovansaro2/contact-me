@@ -24,7 +24,7 @@ export default function AppRoutes() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Navigate to="/contact" replace />} />
-          <Route path="/contact" element={<PublicPage />} />
+          <Route path="/contact/:id?" element={<PublicPage />} />
           
           {/* Admin Login (Only accessible if NOT logged in) */}
           <Route element={<PublicOnlyRoute />}>

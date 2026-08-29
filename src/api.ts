@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from './db/index.js';
 import { users, profiles, contactMethods } from './db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-jwt-key-2026';
 
@@ -108,7 +108,7 @@ apiRouter.get('/profiles/public/:id', async (req: any, res: any) => {
   try {
     let profile;
     if (req.params.id === 'default' || req.params.id === 'undefined') {
-       const profilesList = await db.select().from(profiles).limit(1);
+       const profilesList = await db.select().from(profiles).orderBy(desc(profiles.updatedAt)).limit(1);
        profile = profilesList[0];
     } else {
        const profilesList = await db.select().from(profiles).where(eq(profiles.userId, req.params.id));
