@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTheme } from '@/hooks/useTheme';
+import GoldenParticles from '@/components/GoldenParticles';
 
 const getMethodDescription = (type: string, value: string, lang: 'kh' | 'en') => {
   switch (type.toLowerCase()) {
@@ -143,8 +144,9 @@ export default function PublicPage() {
 
   return (
     <div
-      className={`min-h-screen relative overflow-hidden bg-[#fdfcfa] text-stone-800 transition-colors duration-300 selection:bg-gray-200 pb-[calc(3rem+env(safe-area-inset-bottom))] pt-[calc(3rem+env(safe-area-inset-top))] dark:bg-[#0f0d0b] dark:text-[#f5ead3] ${lang === 'en' ? "font-['Rajdhani'] font-medium" : "font-sans"}`}
+      className={`min-h-screen relative isolate overflow-hidden bg-[#fdfcfa] text-stone-800 transition-colors duration-300 selection:bg-gray-200 pb-[calc(3rem+env(safe-area-inset-bottom))] pt-[calc(3rem+env(safe-area-inset-top))] dark:bg-[#0f0d0b] dark:text-[#f5ead3] ${lang === 'en' ? "font-['Rajdhani'] font-medium" : "font-sans"}`}
     >
+      <GoldenParticles theme={theme} />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(ellipse_at_center,rgba(217,164,65,0.24),transparent_65%)] opacity-0 transition-opacity duration-300 dark:opacity-100" />
       <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[60%] rounded-full bg-transparent blur-[100px] pointer-events-none dark:bg-transparent" />
       <div className="absolute top-[20%] right-[-10%] h-[50%] w-[50%] rounded-full bg-transparent blur-[100px] pointer-events-none dark:bg-transparent" />
@@ -217,7 +219,10 @@ export default function PublicPage() {
 
           <h1
             className="mb-2 w-full max-w-[340px] overflow-hidden whitespace-nowrap px-4 text-[28px] leading-tight tracking-tight text-stone-800 dark:text-[#f5ead3]"
-            style={{ fontFamily: "'Koulen', 'Khmer OS Koulen', sans-serif", fontWeight: 'normal' }}
+            style={{
+              fontFamily: lang === 'en' ? "'Rajdhani', 'Rajdhani Medium', sans-serif" : "'Koulen', 'Khmer OS Koulen', sans-serif",
+              fontWeight: lang === 'en' ? 500 : 'normal'
+            }}
           >
             {displayName}
           </h1>
@@ -227,7 +232,10 @@ export default function PublicPage() {
           {bio && (
             <p
               className="mx-auto w-full max-w-[340px] px-2 text-[16px] font-medium leading-relaxed text-stone-500 dark:text-[#a89a80]"
-              style={{ fontFamily: "'Battambang', 'Khmer OS Battambang', sans-serif" }}
+              style={{
+                fontFamily: lang === 'en' ? "'Rajdhani', 'Rajdhani Medium', sans-serif" : "'Battambang', 'Khmer OS Battambang', sans-serif",
+                fontWeight: lang === 'en' ? 500 : 500
+              }}
             >
               {bio}
             </p>
