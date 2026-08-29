@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
+import { MoreHorizontal, Share, Eye, HousePlus, Check } from 'lucide-react';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -31,12 +32,39 @@ function isStandalone(): boolean {
 
 function isInAppBrowser(): boolean {
   const ua = navigator.userAgent.toLowerCase();
-  return /fbav|fban|line|instagram|twitter|snapchat|micromessenger/.test(ua);
+  return /fbav|fban|line|instagram|twitter|snapchat|micromessenger|telegram/.test(ua);
 }
 
 function isIosSafari(): boolean {
   const ua = navigator.userAgent.toLowerCase();
   return /safari/.test(ua) && !/crios|fxios|edg|opt|duckduckgo|mercury|firefox/.test(ua);
+}
+
+/** One numbered timeline step: circle icon + connector line + text */
+function TimelineStep({
+  step,
+  icon,
+  last,
+  children,
+}: {
+  step: string;
+  icon: ReactNode;
+  last?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex w-9 shrink-0 flex-col items-center">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-900 text-indigo-200">
+          {icon}
+        </span>
+        {!last && <span className="min-h-4 w-0.5 flex-1 bg-slate-700" />}
+      </div>
+      <div className={last ? 'py-2 text-sm leading-relaxed text-slate-200' : 'py-2 pb-5 text-sm leading-relaxed text-slate-200'}>
+        <strong className="text-white">{step}.</strong> {children}
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -53,7 +81,6 @@ export default function InstallGate({ children }: { children: ReactNode }) {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [redirectFailed, setRedirectFailed] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
-  const [telegram] = useState<boolean>(() => /telegram/i.test(navigator.userAgent));
   const redirectAttempted = useRef(false);
 
   // Test bypass: ?gate=off stores a per-session flag so the gate stays off while testing
@@ -125,116 +152,97 @@ export default function InstallGate({ children }: { children: ReactNode }) {
 
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950">
-      <div aria-hidden className="pointer-events-none absolute left-1/2 top-2 h-64 w-64 -translate-x-1/2 rounded-full bg-indigo-500/20 blur-3xl" />
-
       <div className="relative mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] pt-[env(safe-area-inset-top)]">
-        <div className="relative">
-          <img src="/pwa-192x192.png" alt="App icon" className="h-24 w-24 rounded-[1.4rem] shadow-2xl ring-1 ring-white/10" />
-          <span className="absolute -bottom-1.5 -right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500 shadow-lg ring-2 ring-slate-950">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="h-3.5 w-3.5 text-white" aria-hidden>
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </span>
-        </div>
-
-        <h1 className="mt-6 text-center text-2xl font-bold leading-tight text-white">ដំឡើង App មុនសិន</h1>
-        <p className="mx-auto mt-2 max-w-xs text-center text-sm leading-relaxed text-slate-400">
-          App នេះដំណើរការតែលើ Home Screen ប៉ុណ្ណោះ។ សូមដំឡើងវាដើម្បីបន្ត។
+        <h1 className="text-center text-xl font-bold text-white">ដំឡើង App មុនសិន</h1>
+        <p className="mt-2 text-center text-sm leading-relaxed text-slate-400">
+          {inApp
+            ? 'អ្នកកំពុងបើកក្នុង App ផ្សេង។ សូមធ្វើតាមជំហានខាងក្រោម៖'
+            : 'App នេះដំណើរការតែលើ Home Screen ប៉ុណ្ណោះ។ សូមដំឡើងវាដើម្បីបន្ត។'}
         </p>
 
-        <div className="mt-8 w-full rounded-2xl bg-white/5 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.55)] ring-1 ring-white/10 backdrop-blur-sm">
+        <div className="mt-6 w-full rounded-2xl border border-slate-700 bg-slate-800 p-5">
           {inApp && platform === 'android' ? (
-            <>
-              {!redirectFailed ? (
-                <div className="flex flex-col items-center py-4">
-                  <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-400" />
-                  <p className="text-sm font-medium text-slate-300">កំពុងបើកក្នុង Chrome...</p>
-                </div>
-              ) : (
-                <>
-                  <h2 className="mb-2 text-base font-bold text-white">សូមបើកក្នុង Chrome ដោយដៃ</h2>
-                  <p className="mb-4 text-sm leading-relaxed text-slate-400">
-                    ការបើកស្វ័យប្រវត្តិមិនបានដំណើរការទេ។ សូមចម្លង Link រួចបើកក្នុង Chrome។
-                  </p>
-                  <button
-                    onClick={copyLink}
-                    className="flex w-full items-center justify-center rounded-xl bg-white px-4 py-3.5 text-sm font-bold text-slate-950 shadow-lg transition-all hover:bg-slate-100 active:scale-[0.98]"
-                    type="button"
-                  >
-                    {copied ? 'ចម្លងរួចរាល់' : 'ចម្លង Link'}
-                  </button>
-                  <p className="mt-3 text-xs leading-relaxed text-slate-500">
-                    បើកកម្មវិធី <strong>Chrome</strong> → ចុច address bar យូរៗ → <strong>Paste</strong> → បើក។
-                    បន្ទាប់មកអ្នកនឹងឃើញការណែនាំដំឡើង។
-                  </p>
-                </>
-              )}
-            </>
+            !redirectFailed ? (
+              <div className="flex flex-col items-center py-4">
+                <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-400" />
+                <p className="text-sm font-medium text-slate-300">កំពុងបើកក្នុង Chrome...</p>
+              </div>
+            ) : (
+              <>
+                <h2 className="mb-2 text-base font-bold text-white">សូមបើកក្នុង Chrome ដោយដៃ</h2>
+                <p className="mb-4 text-sm leading-relaxed text-slate-400">
+                  ការបើកស្វ័យប្រវត្តិមិនបានដំណើរការទេ។ សូមចម្លង Link រួចបើកក្នុង Chrome។
+                </p>
+                <button
+                  onClick={copyLink}
+                  className="w-full rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-100"
+                  type="button"
+                >
+                  {copied ? 'ចម្លងរួចរាល់' : 'ចម្លង Link'}
+                </button>
+                <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                  បើកកម្មវិធី <strong className="text-slate-300">Chrome</strong> → ចុច address bar យូរៗ → Paste → បើក។
+                </p>
+              </>
+            )
           ) : inApp ? (
             <>
-              <h2 className="mb-4 text-base font-bold text-white">សូមបើកក្នុង Safari ជាមុនសិន</h2>
-              <button
-                onClick={copyLink}
-                className="flex w-full items-center justify-center rounded-xl bg-white px-4 py-3.5 text-sm font-bold text-slate-950 shadow-lg transition-all hover:bg-slate-100 active:scale-[0.98]"
-                type="button"
-              >
-                {copied ? 'ចម្លងរួចរាល់' : 'ចម្លង Link'}
-              </button>
-              <ol className="mt-5 space-y-3 text-sm text-slate-200">
-                <li className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">1</span>
-                  <span>ចុច <strong>"ចម្លង Link"</strong> ខាងលើ។</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">2</span>
-                  <span>បើកកម្មវិធី <strong>Safari</strong> → ចុច address bar → paste → បើក។</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">3</span>
-                  <span>បន្ទាប់មកអ្នកនឹងឃើញការណែនាំដំឡើង។</span>
-                </li>
-              </ol>
-              {telegram && (
-                <div className="mt-4 rounded-xl bg-indigo-500/10 p-3 text-xs leading-relaxed text-indigo-200 ring-1 ring-indigo-400/20">
-                  ក្នុង Telegram៖ ចុច ⋯ មុំខាងស្តាំលើ → Open in Safari
-                </div>
-              )}
+              <TimelineStep step="១" icon={<MoreHorizontal size={16} />}>
+                ចុចលើសញ្ញាចុច ៣ <strong className="text-white">···</strong> (មុំខាងលើ)
+              </TimelineStep>
+              <TimelineStep step="២" icon={<Share size={16} />}>
+                ចុចលើ <strong className="text-white">Share</strong>
+              </TimelineStep>
+              <TimelineStep step="៣" icon={<Eye size={16} />}>
+                ចុចលើ <strong className="text-white">View More</strong>
+              </TimelineStep>
+              <TimelineStep step="៤" icon={<HousePlus size={16} />}>
+                ចុចលើ <strong className="text-white">Add to Home Screen</strong>
+              </TimelineStep>
+              <TimelineStep step="៥" icon={<Check size={16} />} last>
+                ចុច <strong className="text-white">Add</strong> ដើម្បីបញ្ជាក់
+              </TimelineStep>
+
+              <div className="mt-5 border-t border-slate-700 pt-4">
+                <p className="mb-3 text-xs leading-relaxed text-slate-400">
+                  បើរកមិនឃើញម៉ឺនុយទាំងនោះ សូមចម្លង Link រួចបើកក្នុង Safari ជំនួស៖
+                </p>
+                <button
+                  onClick={copyLink}
+                  className="w-full rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-100"
+                  type="button"
+                >
+                  {copied ? 'ចម្លងរួចរាល់' : 'ចម្លង Link'}
+                </button>
+              </div>
             </>
           ) : platform === 'android' ? (
-            <>
-              {installPrompt ? (
-                <>
-                  <p className="mb-4 text-center text-sm text-slate-400">
-                    ចុចប៊ូតុងខាងក្រោមដើម្បីដំឡើងចូល Home Screen។
-                  </p>
-                  <button
-                    onClick={handleInstallClick}
-                    className="flex w-full items-center justify-center rounded-xl bg-white px-4 py-3.5 text-sm font-bold text-slate-950 shadow-lg transition-all hover:bg-slate-100 active:scale-[0.98]"
-                    type="button"
-                  >
-                    ដំឡើងឥឡូវនេះ
-                  </button>
-                </>
-              ) : (
-                <>
-                  <h2 className="mb-4 text-base font-bold text-white">សូមដំឡើងដោយដៃ</h2>
-                  <ol className="space-y-3 text-sm text-slate-200">
-                    <li className="flex items-center gap-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">1</span>
-                      <span>ចុចម៉ឺនុយ <strong>⋮</strong> នៅជ្រុងខាងលើ</span>
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">2</span>
-                      <span>ជ្រើសរើស <strong>"Add to Home screen"</strong> ឬ <strong>"Install app"</strong></span>
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">3</span>
-                      <span>បញ្ជាក់ដោយចុច <strong>"Install"</strong></span>
-                    </li>
-                  </ol>
-                </>
-              )}
-            </>
+            installPrompt ? (
+              <>
+                <p className="mb-4 text-center text-sm text-slate-400">
+                  ចុចប៊ូតុងខាងក្រោមដើម្បីដំឡើងចូល Home Screen។
+                </p>
+                <button
+                  onClick={handleInstallClick}
+                  className="w-full rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-100"
+                  type="button"
+                >
+                  ដំឡើងឥឡូវនេះ
+                </button>
+              </>
+            ) : (
+              <>
+                <TimelineStep step="១" icon={<MoreVertical size={16} />}>
+                  ចុចម៉ឺនុយ <strong className="text-white">⋮</strong> នៅជ្រុងខាងលើ
+                </TimelineStep>
+                <TimelineStep step="២" icon={<HousePlus size={16} />}>
+                  ជ្រើសរើស <strong className="text-white">Add to Home screen</strong>
+                </TimelineStep>
+                <TimelineStep step="៣" icon={<Check size={16} />} last>
+                  បញ្ជាក់ដោយចុច <strong className="text-white">Install</strong>
+                </TimelineStep>
+              </>
+            )
           ) : (
             <>
               {!iosSafari && (
@@ -242,49 +250,22 @@ export default function InstallGate({ children }: { children: ReactNode }) {
                   ការដំឡើងដំណើរការតែលើ <strong>Safari</strong> ប៉ុណ្ណោះ។ សូមចម្លង Link នេះ រួចបើកក្នុង Safari ជាមុនសិន។
                 </div>
               )}
-              <h2 className="mb-4 text-base font-bold text-white">វិធីដំឡើង</h2>
-              <ol className="space-y-3 text-sm text-slate-200">
-                <li className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">1</span>
-                  <span>
-                    ចុចប៊ូតុង <strong>Share</strong>
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="mx-1 inline-block h-4 w-4 align-[-3px] text-indigo-300"
-                      aria-hidden
-                    >
-                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                      <polyline points="16 6 12 2 8 6" />
-                      <line x1="12" y1="2" x2="12" y2="15" />
-                    </svg>
-                    នៅខាងក្រោម browser
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">2</span>
-                  <span>រកមើល រួចជ្រើសរើស <strong>"Add to Home Screen"</strong></span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">3</span>
-                  <span>ចុច <strong>"Add"</strong> ដើម្បីបញ្ជាក់</span>
-                </li>
-              </ol>
+              <TimelineStep step="១" icon={<Share size={16} />}>
+                ចុចប៊ូតុង <strong className="text-white">Share</strong> នៅខាងក្រោម browser
+              </TimelineStep>
+              <TimelineStep step="២" icon={<HousePlus size={16} />}>
+                ជ្រើសរើស <strong className="text-white">Add to Home Screen</strong>
+              </TimelineStep>
+              <TimelineStep step="៣" icon={<Check size={16} />} last>
+                ចុច <strong className="text-white">Add</strong> ដើម្បីបញ្ជាក់
+              </TimelineStep>
             </>
           )}
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500">បន្ទាប់ពីដំឡើងរួច សូមបើក App ពី Home Screen</p>
-        <div className="mt-3 flex items-center justify-center gap-1.5">
-          <img src="/pwa-192x192.png" alt="" className="h-4 w-4 rounded-[0.3rem]" />
-          <span className="text-xs font-medium text-slate-600">វត្តវារីបាការាម</span>
-        </div>
+        <p className="mt-2 text-xs font-medium text-slate-600">វត្តវារីបាការាម</p>
       </div>
     </div>
   );
 }
-
