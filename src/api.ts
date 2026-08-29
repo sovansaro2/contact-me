@@ -28,7 +28,9 @@ const authenticate = (req: any, res: any, next: any) => {
 const mapProfile = (p: any) => p ? {
   id: p.userId,
   display_name: p.displayName,
+  display_name_en: p.displayNameEn,
   bio: p.bio,
+  bio_en: p.bioEn,
   avatar_url: p.avatarUrl,
   cover_url: p.coverUrl,
   theme_settings: null,
@@ -133,7 +135,7 @@ apiRouter.get('/profiles/me', authenticate, async (req: any, res: any) => {
 
 apiRouter.put('/profiles/me', authenticate, async (req: any, res: any) => {
   try {
-    const { display_name, bio, avatar_url, cover_url } = req.body;
+    const { display_name, display_name_en, bio, bio_en, avatar_url, cover_url } = req.body;
     
     const [existing] = await db.select().from(profiles).where(eq(profiles.userId, req.user.userId));
     
@@ -141,7 +143,9 @@ apiRouter.put('/profiles/me', authenticate, async (req: any, res: any) => {
       const [updated] = await db.update(profiles)
         .set({ 
           displayName: display_name, 
+          displayNameEn: display_name_en,
           bio, 
+          bioEn: bio_en,
           avatarUrl: avatar_url, 
           coverUrl: cover_url, 
           updatedAt: new Date() 
@@ -154,7 +158,9 @@ apiRouter.put('/profiles/me', authenticate, async (req: any, res: any) => {
         .values({ 
           userId: req.user.userId, 
           displayName: display_name, 
+          displayNameEn: display_name_en,
           bio, 
+          bioEn: bio_en,
           avatarUrl: avatar_url, 
           coverUrl: cover_url 
         })

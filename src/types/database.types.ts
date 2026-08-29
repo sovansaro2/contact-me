@@ -9,7 +9,9 @@ export type Json =
 export interface Profile {
   id: string
   display_name: string | null
+  display_name_en: string | null
   bio: string | null
+  bio_en: string | null
   avatar_url: string | null
   cover_url: string | null
   theme_settings: Json | null

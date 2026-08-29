@@ -129,8 +129,13 @@ export default function PublicPage() {
     );
   }
 
-  const displayName = profile?.display_name || (lang === 'kh' ? 'ទំនាក់ទំនងមកខ្ញុំ' : 'Contact Me');
-  const bio = profile?.bio;
+  const displayName = lang === 'en' 
+    ? (profile?.display_name_en || profile?.display_name || 'Contact Me') 
+    : (profile?.display_name || 'ទំនាក់ទំនងមកខ្ញុំ');
+    
+  const bio = lang === 'en' 
+    ? (profile?.bio_en || profile?.bio) 
+    : profile?.bio;
 
   return (
     <div className={`min-h-screen relative overflow-hidden bg-slate-50 selection:bg-gray-200 pb-[calc(3rem+env(safe-area-inset-bottom))] pt-[calc(3rem+env(safe-area-inset-top))] ${lang === 'en' ? "font-['Rajdhani'] font-medium" : "font-sans"}`}>

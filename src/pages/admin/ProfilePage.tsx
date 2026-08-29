@@ -37,7 +37,9 @@ export default function ProfilePage() {
       
       await ProfileService.updateOwnerProfile({
         display_name: profile.display_name || null,
+        display_name_en: profile.display_name_en || null,
         bio: profile.bio || null,
+        bio_en: profile.bio_en || null,
         avatar_url: publicUrl,
         cover_url: profile.cover_url || null,
       });
@@ -83,7 +85,9 @@ export default function ProfilePage() {
     try {
       await ProfileService.updateOwnerProfile({
         display_name: profile.display_name || null,
+        display_name_en: profile.display_name_en || null,
         bio: profile.bio || null,
+        bio_en: profile.bio_en || null,
         avatar_url: profile.avatar_url || null,
         cover_url: profile.cover_url || null,
       });
@@ -127,6 +131,19 @@ export default function ProfilePage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
+            ឈ្មោះបង្ហាញភាសាអង់គ្លេស (Display Name EN)
+          </label>
+          <input
+            type="text"
+            value={profile.display_name_en || ''}
+            onChange={(e) => setProfile({ ...profile, display_name_en: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all"
+            placeholder="Example: Rim Ravi"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             ការពិពណ៌នាខ្លី (Bio)
           </label>
           <textarea
@@ -135,6 +152,19 @@ export default function ProfilePage() {
             onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all resize-none"
             placeholder="ឧទាហរណ៍៖ សូមជ្រើសរើសវិធីទំនាក់ទំនងដែលអ្នកងាយស្រួលបំផុត"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            ការពិពណ៌នាខ្លីភាសាអង់គ្លេស (Bio EN)
+          </label>
+          <textarea
+            rows={3}
+            value={profile.bio_en || ''}
+            onChange={(e) => setProfile({ ...profile, bio_en: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all resize-none"
+            placeholder="Example: Please select your preferred contact method"
           />
         </div>
 
