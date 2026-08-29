@@ -57,7 +57,12 @@ export class ProfileService {
   static async uploadAvatar(file: File): Promise<string> {
     // For now, since we haven't implemented file storage on Sabay Cloud,
     // let's return a fake placeholder or throw an error indicating we need S3/bucket.
-    alert('ការបង្ហោះរូបភាពមិនទាន់អាចប្រើបានទេ (ត្រូវការ File Storage)');
-    throw new Error('Not implemented');
+    
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
   }
 }
