@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { MoreHorizontal, Share, Eye, HousePlus, Check } from 'lucide-react';
+import { MoreHorizontal, Share, Eye, HousePlus, Check, MoreVertical } from 'lucide-react';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;

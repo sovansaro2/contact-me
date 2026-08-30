@@ -5,10 +5,12 @@ import { db } from './db/index.js';
 import { users, profiles, contactMethods } from './db/schema.js';
 import { eq, and, desc, count } from 'drizzle-orm';
 
-if (!process.env.JWT_SECRET) {
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-fallback-secret-key' : '');
+
+if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
 }
-const JWT_SECRET = process.env.JWT_SECRET;
+
 
 export const apiRouter = Router();
 
