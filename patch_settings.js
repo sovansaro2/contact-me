@@ -1,4 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import fs from 'fs';
+
+const content = `import { useState, type FormEvent } from 'react';
 import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 
@@ -30,7 +32,7 @@ export default function SettingsPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': \`Bearer \${token}\`
         },
         body: JSON.stringify({
           email,
@@ -96,11 +98,11 @@ export default function SettingsPage() {
           
           <div className="p-6 space-y-5">
             {message && (
-              <div className={`p-4 rounded-xl border flex items-start gap-3 ${
+              <div className={\`p-4 rounded-xl border flex items-start gap-3 \${
                 message.type === 'success' 
                   ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
                   : 'bg-red-50 border-red-100 text-red-600'
-              }`}>
+              }\`}>
                 {message.type === 'success' ? (
                   <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
                 ) : (
@@ -158,4 +160,6 @@ export default function SettingsPage() {
       </form>
     </div>
   );
-}
+}`;
+
+fs.writeFileSync('src/pages/admin/SettingsPage.tsx', content);
