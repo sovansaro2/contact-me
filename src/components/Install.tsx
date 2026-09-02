@@ -89,7 +89,14 @@ export default function InstallGate({ children }: { children: ReactNode }) {
     const timer = setTimeout(() => {
       setPromptOpen(false);
     }, 10000);
-    return () => clearTimeout(timer);
+
+    const handleShowPrompt = () => setPromptOpen(true);
+    window.addEventListener('show-install-prompt', handleShowPrompt);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('show-install-prompt', handleShowPrompt);
+    };
   }, []);
 
   // Test bypass: ?gate=off stores a per-session flag so the gate stays off while testing

@@ -9,7 +9,8 @@ import {
   Link as LinkIcon,
   AlertCircle,
   Moon,
-  Sun
+  Sun,
+  Info
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTheme } from '@/hooks/useTheme';
@@ -184,6 +185,15 @@ export default function PublicPage() {
               className="rounded-full bg-transparent p-1.5 text-stone-500 transition-colors hover:text-stone-900 dark:text-[#f5ead3] dark:hover:text-white"
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            <div className="mx-1 h-3 w-[1px] bg-stone-200 dark:bg-white/10" />
+            <button
+              type="button"
+              aria-label="App info"
+              onClick={() => window.dispatchEvent(new Event('show-install-prompt'))}
+              className="rounded-full bg-transparent p-1.5 text-stone-500 transition-colors hover:text-stone-900 dark:text-[#f5ead3] dark:hover:text-white"
+            >
+              <Info className="h-4 w-4" />
             </button>
           </div>
         </div>
