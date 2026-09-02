@@ -237,8 +237,8 @@ export default function PublicPage() {
           <h1
             className="mb-2 w-full max-w-[340px] overflow-hidden whitespace-nowrap px-4 text-[28px] leading-tight tracking-tight text-stone-800 dark:text-[#f5ead3]"
             style={{
-              fontFamily: lang === 'en' ? "'Rajdhani', 'Rajdhani Medium', sans-serif" : "'Koulen', 'Khmer OS Koulen', sans-serif",
-              fontWeight: lang === 'en' ? 500 : 'normal'
+              fontFamily: lang === 'en' ? "'Rajdhani', sans-serif" : "'Koulen', 'Khmer OS Koulen', sans-serif",
+              fontWeight: lang === 'en' ? 700 : 'normal'
             }}
           >
             {displayName}
