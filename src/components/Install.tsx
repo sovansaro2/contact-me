@@ -81,29 +81,31 @@ export default function InstallGate({ children }: { children: ReactNode }) {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [redirectFailed, setRedirectFailed] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
-  const [promptOpen, setPromptOpen] = useState(true);
+  const [promptOpen, setPromptOpen] = useState<boolean>(platform !== 'desktop' && !standalone && !gateOff);
   const redirectAttempted = useRef(false);
 
   useEffect(() => {
-    // Auto close after 10 seconds
-    const timer = setTimeout(() => {
-      setPromptOpen(false);
-    }, 10000);
+    let timer: NodeJS.Timeout;
+    // Only auto-close if it was shown automatically on mobile
+    if (platform !== 'desktop' && !standalone && !gateOff) {
+      timer = setTimeout(() => setPromptOpen(false), 10000);
+    }
 
     const handleShowPrompt = () => setPromptOpen(true);
     window.addEventListener('show-install-prompt', handleShowPrompt);
 
     return () => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       window.removeEventListener('show-install-prompt', handleShowPrompt);
     };
-  }, []);
+  }, [platform, standalone, gateOff]);
 
   // Test bypass: ?gate=off stores a per-session flag so the gate stays off while testing
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('gate') === 'off') {
       sessionStorage.setItem(GATE_OFF_KEY, '1');
       setGateOff(true);
+      setPromptOpen(false);
     }
   }, []);
 
@@ -162,7 +164,7 @@ export default function InstallGate({ children }: { children: ReactNode }) {
   };
 
   // Desktop, already installed (standalone), or test bypass → render children directly
-  const shouldShowPrompt = promptOpen && platform !== 'desktop' && !standalone && !gateOff;
+  const shouldShowPrompt = promptOpen;
 
   return (
     <>
