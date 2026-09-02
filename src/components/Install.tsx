@@ -172,13 +172,6 @@ export default function InstallGate({ children }: { children: ReactNode }) {
       {shouldShowPrompt && (
         <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/95 backdrop-blur-sm">
           <div className="relative mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] pt-[env(safe-area-inset-top)]">
-            <button
-              onClick={() => setPromptOpen(false)}
-              className="absolute right-4 top-[calc(env(safe-area-inset-top)+1rem)] rounded-full bg-slate-800 p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
-              aria-label="Close"
-            >
-              <X size={20} />
-            </button>
             <h1 className="text-center text-xl font-bold text-white">ដំឡើង App មុនសិន</h1>
             <p className="mt-2 text-center text-sm leading-relaxed text-slate-400">
           {inApp
@@ -186,7 +179,14 @@ export default function InstallGate({ children }: { children: ReactNode }) {
             : 'App នេះដំណើរការតែលើ Home Screen ប៉ុណ្ណោះ។ សូមដំឡើងវាដើម្បីបន្ត។'}
         </p>
 
-        <div className="mt-6 w-full rounded-2xl border border-slate-700 bg-slate-800 p-5">
+        <div className="relative mt-6 w-full rounded-2xl border border-slate-700 bg-slate-800 p-5 pt-12">
+          <button
+            onClick={() => setPromptOpen(false)}
+            className="absolute right-3 top-3 rounded-full bg-red-500/10 p-2 text-red-500 transition-colors hover:bg-red-500/20 hover:text-red-400"
+            aria-label="Close"
+          >
+            <X size={16} strokeWidth={2.5} />
+          </button>
           {inApp && platform === 'android' ? (
             !redirectFailed ? (
               <div className="flex flex-col items-center py-4">
