@@ -11,10 +11,10 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-512x512-maskable.png'],
+        includeAssets: ['icon.png'],
         manifest: {
-          name: 'វត្តវារីបាការាម(ស្នាយដួច)',
-          short_name: 'វត្តវារីបាការាម',
+          name: 'វត្តស្នាយដួច',
+          short_name: 'វត្តស្នាយដួច',
           description: 'សូមជ្រើសរើសវិធីទំនាក់ទំនងដែលអ្នកងាយស្រួលបំផុត។',
           theme_color: '#F9FAFB',
           background_color: '#F9FAFB',
@@ -22,17 +22,17 @@ export default defineConfig(() => {
           orientation: 'portrait',
           icons: [
             {
-              src: 'pwa-192x192.png',
+              src: 'icon.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'pwa-512x512.png',
+              src: 'icon.png',
               sizes: '512x512',
               type: 'image/png'
             },
             {
-              src: 'pwa-512x512-maskable.png',
+              src: 'icon.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable'

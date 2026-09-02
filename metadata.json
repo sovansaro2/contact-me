@@ -1,6 +1,6 @@
 {
-  "name": "Contact Me PWA",
-  "description": "A modern, mobile-first PWA digital contact card to easily share communication channels.",
+  "name": "វត្តស្នាយដួច",
+  "description": "សូមជ្រើសរើសវិធីទំនាក់ទំនងដែលអ្នកងាយស្រួលបំផុត។",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
