@@ -50,7 +50,7 @@ export default function AdminLayout() {
           <div className="hidden md:block my-4 border-t border-gray-100"></div>
           
           <a
-            href={`/contact/${user?.id || ''}`}
+            href={`/${user?.id || ''}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors whitespace-nowrap"

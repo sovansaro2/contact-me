@@ -23,8 +23,8 @@ export default function AppRoutes() {
       <Suspense fallback={<AdminLoadingFallback />}>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Navigate to="/contact" replace />} />
-          <Route path="/contact/:id?" element={<PublicPage />} />
+          
+          <Route path="/:id?" element={<PublicPage />} />
           
           {/* Admin Login (Only accessible if NOT logged in) */}
           <Route element={<PublicOnlyRoute />}>
@@ -42,7 +42,7 @@ export default function AppRoutes() {
           </Route>
           
           {/* Catch-all fallback */}
-          <Route path="*" element={<Navigate to="/contact" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

@@ -47,7 +47,7 @@ export default function AdminPage() {
           <p className="text-gray-500">សួស្តី, សូមស្វាគមន៍មកកាន់ប្រព័ន្ធគ្រប់គ្រងរបស់អ្នក។</p>
         </div>
         <Link
-          to="/contact"
+          to="/"
           target="_blank"
           className="flex items-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 px-5 py-2.5 rounded-xl font-medium transition-colors"
         >
