@@ -151,38 +151,45 @@ export default function PublicPage() {
       <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[60%] rounded-full bg-transparent blur-[100px] pointer-events-none dark:bg-transparent" />
       <div className="absolute top-[20%] right-[-10%] h-[50%] w-[50%] rounded-full bg-transparent blur-[100px] pointer-events-none dark:bg-transparent" />
 
-      <div className="relative z-10 mx-auto w-full max-w-[420px] px-4">
-        <header className="pt-[calc(0.75rem+env(safe-area-inset-top))]">
-          <div className="flex items-center justify-end">
-            <div className="flex items-center rounded-full border border-white/10 bg-[#1f1b17]/70 px-1.5 py-1 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur-md dark:border-white/10 dark:bg-white/5">
-              <button
-                type="button"
-                aria-label="Switch to Khmer"
-                onClick={() => setLang('kh')}
-                className={`rounded-full px-3 py-1.5 text-[13px] font-bold transition-all ${lang === 'kh' ? 'bg-white/10 text-[#f5ead3] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]' : 'text-[#a89a80] hover:text-[#f5ead3]'}`}
-              >
-                KH
-              </button>
-              <button
-                type="button"
-                aria-label="Switch to English"
-                onClick={() => setLang('en')}
-                className={`rounded-full px-3 py-1.5 text-[13px] font-bold transition-all ${lang === 'en' ? 'bg-white/10 text-[#f5ead3] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]' : 'text-[#a89a80] hover:text-[#f5ead3]'}`}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                aria-label="Toggle theme"
-                onClick={toggleTheme}
-                className="ml-1.5 rounded-full bg-white/5 p-2 text-[#f5ead3] transition-colors hover:text-white"
-              >
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
-            </div>
+      <nav className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-[#eee7db] bg-white/80 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur-md transition-colors duration-300 dark:border-[#d9a441]/15 dark:bg-[#0f0d0b]/80">
+        <div 
+          className="text-lg tracking-wide text-stone-800 dark:text-[#f5ead3]" 
+          style={{ fontFamily: lang === 'en' ? "'Rajdhani', 'Rajdhani Medium', sans-serif" : "'Koulen', 'Khmer OS Koulen', sans-serif", fontWeight: lang === 'en' ? 600 : 'normal' }}
+        >
+          {lang === 'kh' ? 'ទំនាក់ទំនង' : 'CONTACT'}
+        </div>
+        <div className="flex items-center">
+          <div className="flex items-center rounded-full border border-stone-200 bg-white/60 px-1.5 py-1 shadow-sm backdrop-blur-md transition-colors dark:border-white/10 dark:bg-[#1a1612]/70 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
+            <button
+              type="button"
+              aria-label="Switch to Khmer"
+              onClick={() => setLang('kh')}
+              className={`rounded-full px-3 py-1.5 text-[13px] font-bold transition-all ${lang === 'kh' ? 'bg-stone-100 text-stone-900 shadow-sm dark:bg-white/10 dark:text-[#f5ead3] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]' : 'text-stone-500 hover:text-stone-900 dark:text-[#a89a80] dark:hover:text-[#f5ead3]'}`}
+            >
+              KH
+            </button>
+            <button
+              type="button"
+              aria-label="Switch to English"
+              onClick={() => setLang('en')}
+              className={`rounded-full px-3 py-1.5 text-[13px] font-bold transition-all ${lang === 'en' ? 'bg-stone-100 text-stone-900 shadow-sm dark:bg-white/10 dark:text-[#f5ead3] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]' : 'text-stone-500 hover:text-stone-900 dark:text-[#a89a80] dark:hover:text-[#f5ead3]'}`}
+            >
+              EN
+            </button>
+            <div className="mx-1 h-3 w-[1px] bg-stone-200 dark:bg-white/10" />
+            <button
+              type="button"
+              aria-label="Toggle theme"
+              onClick={toggleTheme}
+              className="rounded-full bg-transparent p-1.5 text-stone-500 transition-colors hover:text-stone-900 dark:text-[#f5ead3] dark:hover:text-white"
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
           </div>
-        </header>
+        </div>
+      </nav>
 
+      <div className="relative z-10 mx-auto w-full max-w-[420px] px-4 pt-[calc(3.5rem)]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

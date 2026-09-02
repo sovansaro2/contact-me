@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { MoreHorizontal, Share, Eye, HousePlus, Check, MoreVertical } from 'lucide-react';
+import { MoreHorizontal, Share, Eye, HousePlus, Check, MoreVertical, X } from 'lucide-react';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -81,7 +81,16 @@ export default function InstallGate({ children }: { children: ReactNode }) {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [redirectFailed, setRedirectFailed] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const [promptOpen, setPromptOpen] = useState(true);
   const redirectAttempted = useRef(false);
+
+  useEffect(() => {
+    // Auto close after 10 seconds
+    const timer = setTimeout(() => {
+      setPromptOpen(false);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Test bypass: ?gate=off stores a per-session flag so the gate stays off while testing
   useEffect(() => {
@@ -146,15 +155,23 @@ export default function InstallGate({ children }: { children: ReactNode }) {
   };
 
   // Desktop, already installed (standalone), or test bypass → render children directly
-  if (platform === 'desktop' || standalone || gateOff) {
-    return <>{children}</>;
-  }
+  const shouldShowPrompt = promptOpen && platform !== 'desktop' && !standalone && !gateOff;
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950">
-      <div className="relative mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] pt-[env(safe-area-inset-top)]">
-        <h1 className="text-center text-xl font-bold text-white">ដំឡើង App មុនសិន</h1>
-        <p className="mt-2 text-center text-sm leading-relaxed text-slate-400">
+    <>
+      {children}
+      {shouldShowPrompt && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/95 backdrop-blur-sm">
+          <div className="relative mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] pt-[env(safe-area-inset-top)]">
+            <button
+              onClick={() => setPromptOpen(false)}
+              className="absolute right-4 top-[calc(env(safe-area-inset-top)+1rem)] rounded-full bg-slate-800 p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+            <h1 className="text-center text-xl font-bold text-white">ដំឡើង App មុនសិន</h1>
+            <p className="mt-2 text-center text-sm leading-relaxed text-slate-400">
           {inApp
             ? 'អ្នកកំពុងបើកក្នុង App ផ្សេង។ សូមធ្វើតាមជំហានខាងក្រោម៖'
             : 'App នេះដំណើរការតែលើ Home Screen ប៉ុណ្ណោះ។ សូមដំឡើងវាដើម្បីបន្ត។'}
@@ -267,5 +284,7 @@ export default function InstallGate({ children }: { children: ReactNode }) {
         <p className="mt-2 text-xs font-medium text-slate-600">វត្តវារីបាការាម</p>
       </div>
     </div>
+    )}
+    </>
   );
 }
