@@ -8,7 +8,7 @@ on:
 jobs:
   build-ios:
     name: Build iOS with Xcode on macOS
-    runs-on: macos-14 # ប្រើ macOS ចុងក្រោយបង្អស់របស់ GitHub
+    runs-on: macos-14 # ប្រើប្រាស់ macOS Runner របស់ GitHub
 
     steps:
       # ជំហានទី ១: ទាញយកកូដពី Repository
@@ -19,54 +19,50 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
-      # ជំហានទី ៣: ដំឡើង Dependencies ទាំងអស់ (រួមទាំង @capacitor/ios)
-      - name: Install NPM Dependencies
-        run: |
-          npm ci || npm install
-          npm install @capacitor/ios@8.0.3
+      # ជំហានទី ៣: ដំឡើង Dependencies ទាំងអស់
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
 
-      # ជំហានទី ៤: Build Web Assets
+      # ជំហានទី ៤: Build Web Assets (PWA)
       - name: Build Web Application
         run: npm run build
 
-      # ជំហានទី ៥: បង្កើត និង Sync ចូល Folder iOS
-      - name: Capacitor Add & Sync iOS
+      # ជំហានទី ៥: បង្កើត និង Sync iOS Platform
+      - name: Setup iOS with Capacitor
         run: |
-          npx cap add ios || true
+          if [ ! -d "ios" ]; then
+            npx cap add ios
+          fi
           npx cap sync ios
 
-      # ជំហានទី ៦: Compile ជាមួយ Xcode (No-code-signing for development testing)
-      - name: Build Xcode Project
+      # ជំហានទី ៦: Compile ជាមួយ Xcode (Unsigned Release Build)
+      - name: Compile iOS Project with Xcode
         run: |
           cd ios/App
-          xcodebuild -workspace App.xcworkspace \
+          xcodebuild build \
+            -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            -archivePath App.xcarchive \
-            archive \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
 
-      # ជំហានទី ៧: វេចខ្ចប់ Archive & Payload ចេញជា IPA / ZIP
-      - name: Package App
+      # ជំហានទី ៧: វេចខ្ចប់ជាឯកសារ IPA
+      - name: Package Unsigned IPA
         run: |
-          mkdir -p build_output/Payload
-          cp -r ios/App/App.xcarchive/Products/Applications/App.app build_output/Payload/
-          cd build_output
+          mkdir -p Payload
+          cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
           zip -r App-iOS.ipa Payload
-          zip -r App-iOS.xcarchive.zip ../ios/App/App.xcarchive
 
-      # ជំហានទី ៨: Upload File App សម្រាប់ឱ្យអ្នកទាញយក (Download Artifact)
+      # ជំហានទី ៨: បង្ហោះ IPA សម្រាប់ទាញយក (Download Artifact)
       - name: Upload iOS IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: iOS-App-Build
-          path: |
-            build_output/App-iOS.ipa
-            build_output/App-iOS.xcarchive.zip
+          name: iOS-App-IPA
+          path: App-iOS.ipa
           retention-days: 14
