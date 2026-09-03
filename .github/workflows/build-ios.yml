@@ -33,9 +33,8 @@ jobs:
       # ជំហានទី ៥: បង្កើត និង Sync iOS Platform
       - name: Setup iOS with Capacitor
         run: |
-          if [ ! -d "ios" ]; then
-            npx cap add ios
-          fi
+          rm -rf ios
+          npx cap add ios
           npx cap sync ios
 
       # ជំហានទី ៦: Compile ជាមួយ Xcode (Unsigned Release Build)
