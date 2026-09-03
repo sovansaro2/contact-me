@@ -57,15 +57,24 @@ jobs:
             exit 1
           fi
 
+          # បិទការទាមទារ Apple Developer Signing ដោយស្វ័យប្រវត្តិក្នុង Xcode project
+          if [ -f "App.xcodeproj/project.pbxproj" ]; then
+            sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' App.xcodeproj/project.pbxproj || true
+            sed -i '' 's/ProvisioningStyle = Automatic;/ProvisioningStyle = Manual;/g' App.xcodeproj/project.pbxproj || true
+            sed -i '' 's/DevelopmentTeam = "[^"]*";/DevelopmentTeam = "";/g' App.xcodeproj/project.pbxproj || true
+          fi
+
           xcodebuild build \
             $TARGET_FLAG \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build \
+            CODE_SIGN_STYLE=Manual \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            COMPILER_INDEX_STORE_ENABLE=NO
 
       # ជំហានទី ៧: វេចខ្ចប់ជាឯកសារ IPA
       - name: Package Unsigned IPA
