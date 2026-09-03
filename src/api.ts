@@ -169,22 +169,14 @@ apiRouter.get('/profiles/public/:id', async (req: any, res: any) => {
   try {
     let profile;
     if (req.params.id === 'default' || req.params.id === 'undefined') {
-       const profilesList = await db.select().from(profiles).orderBy(desc(profiles.updatedAt)).limit(1);
-       profile = profilesList[0];
-       // Guard: only expose a "default" profile when it is explicitly designated
-       if (profile) {
-         const expectedUserId = process.env.DEFAULT_PROFILE_USER_ID;
-         if (expectedUserId) {
-           if (profile.userId !== expectedUserId) {
-             return res.status(404).json({ error: 'Not found' });
-           }
-         } else {
-           // No designated profile configured: only allow when exactly one profile exists
-           const [{ total }] = await db.select({ total: count() }).from(profiles);
-           if (total > 1) {
-             return res.status(404).json({ error: 'Not found' });
-           }
-         }
+       const targetUser = await db.select().from(users).where(eq(users.email, 'contact.watsnaydouch.site@gmail.com'));
+       if (targetUser.length > 0) {
+         const targetProfile = await db.select().from(profiles).where(eq(profiles.userId, targetUser[0].id));
+         if (targetProfile.length > 0) profile = targetProfile[0];
+       }
+       if (!profile) {
+         const profilesList = await db.select().from(profiles).orderBy(desc(profiles.updatedAt)).limit(1);
+         profile = profilesList[0];
        }
     } else {
        const profilesList = await db.select().from(profiles).where(eq(profiles.userId, req.params.id));
@@ -249,7 +241,17 @@ apiRouter.put('/profiles/me', authenticate, async (req: any, res: any) => {
 // --- CONTACT METHODS ---
 apiRouter.get('/contact-methods/public/:id', async (req: any, res: any) => {
   try {
-    const methods = await db.select().from(contactMethods).where(eq(contactMethods.userId, req.params.id));
+    let userId = req.params.id;
+    if (userId === 'default' || userId === 'undefined' || !userId) {
+      const targetUser = await db.select().from(users).where(eq(users.email, 'contact.watsnaydouch.site@gmail.com'));
+      if (targetUser.length > 0) {
+        userId = targetUser[0].id;
+      } else {
+        const [firstUser] = await db.select().from(users).limit(1);
+        if (firstUser) userId = firstUser.id;
+      }
+    }
+    const methods = await db.select().from(contactMethods).where(eq(contactMethods.userId, userId));
     const active = methods.filter(m => m.enabled).sort((a: any, b: any) => parseInt(a.order) - parseInt(b.order));
     res.json({ contactMethods: active.map(mapContactMethod) });
   } catch (err: any) {

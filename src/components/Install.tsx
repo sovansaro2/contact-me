@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { MoreHorizontal, Share, Eye, HousePlus, Check, MoreVertical, X } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -73,6 +74,10 @@ function TimelineStep({
  * test bypass render children directly. There is no skip button.
  */
 export default function InstallGate({ children }: { children: ReactNode }) {
+  if (Capacitor.isNativePlatform()) {
+    return <>{children}</>;
+  }
+
   const [platform] = useState<Platform>(detectPlatform);
   const [standalone] = useState<boolean>(isStandalone);
   const [inApp] = useState<boolean>(isInAppBrowser);

@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ProfileService } from '@/services/profileService';
 import { ContactMethodService } from '@/services/contactMethodService';
+import { SyncService } from '@/services/syncService';
 import type { Profile, ContactMethod } from '@/types/database.types';
 import { getActionUrl, openContactLink } from '@/lib/links';
 import { getIconForType, getColorForType } from '@/lib/iconMapping';
@@ -10,11 +11,13 @@ import {
   AlertCircle,
   Moon,
   Sun,
-  Info
+  Info,
+  RefreshCw
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTheme } from '@/hooks/useTheme';
 import GoldenParticles from '@/components/GoldenParticles';
+import UpdateBanner from '@/components/UpdateBanner';
 
 const getMethodDescription = (type: string, value: string, lang: 'kh' | 'en') => {
   switch (type.toLowerCase()) {
@@ -63,40 +66,87 @@ const getLocalizedLabel = (type: string, originalLabel: string, lang: 'kh' | 'en
 
 export default function PublicPage() {
   const { id } = useParams<{ id: string }>();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [contactMethods, setContactMethods] = useState<ContactMethod[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile>(() => SyncService.getLocalProfile());
+  const [contactMethods, setContactMethods] = useState<ContactMethod[]>(() =>
+    SyncService.getLocalContactMethods().filter((m) => m.enabled !== false)
+  );
+  const [loading, setLoading] = useState(false);
   const [lang, setLang] = useState<'kh' | 'en'>('kh');
   const [theme, toggleTheme] = useTheme();
+  const [isQuickSyncing, setIsQuickSyncing] = useState(false);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
+  const [hasNewUpdate, setHasNewUpdate] = useState(false);
+  const [pendingRemoteData, setPendingRemoteData] = useState<any>(null);
+  const [isApplyingUpdate, setIsApplyingUpdate] = useState(false);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const p = await ProfileService.getPublicProfile(id);
-      if (!p) {
-        setProfile(null);
-        setContactMethods([]);
-        return;
+  const refreshData = () => {
+    setProfile(SyncService.getLocalProfile());
+    setContactMethods(SyncService.getLocalContactMethods().filter((m) => m.enabled !== false));
+  };
+
+  // Background silent check for remote changes on load
+  useEffect(() => {
+    let isMounted = true;
+    const checkUpdate = async () => {
+      // Small delay to prioritize initial smooth rendering
+      await new Promise((r) => setTimeout(r, 1200));
+      if (!isMounted) return;
+
+      const result = await SyncService.checkForRemoteUpdates();
+      if (isMounted && result.hasUpdate && result.remoteData) {
+        setHasNewUpdate(true);
+        setPendingRemoteData(result.remoteData);
       }
-      
-      setProfile(p);
-      
-      const methods = await ContactMethodService.getPublicContactMethods(p.id);
-      setContactMethods(methods);
-    } catch (err: any) {
-      console.warn('Failed to load contact data:', err.message || err);
-      setError('error');
-    } finally {
-      setLoading(false);
+    };
+
+    checkUpdate();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleApplyUpdateFromBanner = () => {
+    if (!pendingRemoteData) return;
+    setIsApplyingUpdate(true);
+    const success = SyncService.applyRemoteData(pendingRemoteData);
+    setIsApplyingUpdate(false);
+    if (success) {
+      refreshData();
+      setHasNewUpdate(false);
+      setPendingRemoteData(null);
+      setSyncToast(lang === 'kh' ? 'ព័ត៌មានត្រូវបាន Update រួចរាល់!' : 'Updated to latest info!');
+      setTimeout(() => setSyncToast(null), 3500);
     }
   };
 
+  const handleDismissBanner = () => {
+    setHasNewUpdate(false);
+  };
+
+  const handleQuickSync = async () => {
+    const syncUrl = SyncService.getSyncUrl();
+    if (!syncUrl) {
+      setSyncToast(lang === 'kh' ? 'មិនទាន់មានតំណភ្ជាប់ Sync ទេ' : 'No sync URL configured');
+      setTimeout(() => setSyncToast(null), 3000);
+      return;
+    }
+
+    setIsQuickSyncing(true);
+    const result = await SyncService.syncFromRemote();
+    setIsQuickSyncing(false);
+
+    if (result.success) {
+      refreshData();
+      setSyncToast(lang === 'kh' ? 'ធ្វើបច្ចុប្បន្នភាពរួចរាល់!' : 'Updated successfully!');
+    } else {
+      setSyncToast(result.message);
+    }
+    setTimeout(() => setSyncToast(null), 3500);
+  };
+
   useEffect(() => {
-    loadData();
-  }, []);
+    refreshData();
+  }, [id]);
 
   if (loading) {
     return (
@@ -116,20 +166,28 @@ export default function PublicPage() {
     );
   }
 
-  if (error) {
+  if (!profile) {
     return (
       <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center p-6">
-        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-red-100 flex flex-col items-center max-w-sm text-center">
-          <AlertCircle className="w-14 h-14 text-red-400 mb-5" />
-          <p className="text-gray-800 text-[17px] font-medium mb-8">
-            {lang === 'kh' ? 'មិនអាចផ្ទុកព័ត៌មានទំនាក់ទំនងបានទេ' : 'Cannot load contact information'}
+        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-stone-200 flex flex-col items-center max-w-sm text-center">
+          <AlertCircle className="w-14 h-14 text-[#d9a441] mb-5" />
+          <p className="text-gray-800 text-[17px] font-medium mb-6">
+            {lang === 'kh' ? 'មិនទាន់មានទិន្នន័យទំនាក់ទំនងទេ' : 'No contact information available'}
           </p>
-          <button 
-            onClick={loadData}
-            className="px-8 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors active:scale-95"
-          >
-            {lang === 'kh' ? 'ព្យាយាមម្តងទៀត' : 'Try Again'}
-          </button>
+          <div className="flex flex-col gap-2 w-full">
+            <button 
+              onClick={refreshData}
+              className="w-full py-3 bg-[#d9a441] text-stone-900 rounded-xl font-bold hover:bg-[#c49336] transition-colors active:scale-95"
+            >
+              {lang === 'kh' ? 'ព្យាយាមម្តងទៀត' : 'Try Again'}
+            </button>
+            <button 
+              onClick={handleQuickSync}
+              className="w-full py-2.5 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors"
+            >
+              {lang === 'kh' ? 'ទាញយកទិន្នន័យ' : 'Sync Data'}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -151,6 +209,15 @@ export default function PublicPage() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[380px] bg-[radial-gradient(ellipse_at_center,rgba(217,164,65,0.24),transparent_65%)] opacity-0 transition-opacity duration-300 dark:opacity-100" />
       <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[60%] rounded-full bg-transparent blur-[100px] pointer-events-none dark:bg-transparent" />
       <div className="absolute top-[20%] right-[-10%] h-[50%] w-[50%] rounded-full bg-transparent blur-[100px] pointer-events-none dark:bg-transparent" />
+
+      {/* Floating Notification Banner when new remote update is detected */}
+      <UpdateBanner
+        show={hasNewUpdate}
+        isUpdating={isApplyingUpdate}
+        onUpdate={handleApplyUpdateFromBanner}
+        onDismiss={handleDismissBanner}
+        lang={lang}
+      />
 
       <nav className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-[#eee7db] bg-white/80 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur-md transition-colors duration-300 dark:border-[#d9a441]/15 dark:bg-[#0f0d0b]/80">
         <div 
@@ -185,6 +252,16 @@ export default function PublicPage() {
               className="rounded-full bg-transparent p-1.5 text-stone-500 transition-colors hover:text-stone-900 dark:text-[#f5ead3] dark:hover:text-white"
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            <div className="mx-1 h-3 w-[1px] bg-stone-200 dark:bg-white/10" />
+            <button
+              type="button"
+              aria-label="ធ្វើបច្ចុប្បន្នភាពទិន្នន័យ (Sync / Update)"
+              onClick={handleQuickSync}
+              className="rounded-full bg-transparent p-1.5 text-stone-500 transition-colors hover:text-stone-900 dark:text-[#f5ead3] dark:hover:text-white"
+              title={lang === 'kh' ? 'ធ្វើបច្ចុប្បន្នភាពទិន្នន័យ (Sync)' : 'Update & Sync'}
+            >
+              <RefreshCw className={`h-4 w-4 ${isQuickSyncing ? 'animate-spin text-[#d9a441]' : ''}`} />
             </button>
             <div className="mx-1 h-3 w-[1px] bg-stone-200 dark:bg-white/10" />
             <button
@@ -363,9 +440,10 @@ export default function PublicPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="mb-6 mt-12 flex flex-col items-center justify-center gap-6"
+          className="mb-6 mt-12 flex flex-col items-center justify-center gap-4"
         >
           <div className="h-1.5 w-12 rounded-full bg-gray-200/80 dark:bg-[#d9a441]/20" />
+
           <Link 
             to="/admin" 
             className="flex items-center gap-2 text-[13px] font-medium text-stone-400 opacity-60 transition-all hover:text-stone-600 hover:opacity-100 dark:text-[#9a8b6f] dark:hover:text-[#d9a441]"
@@ -377,6 +455,18 @@ export default function PublicPage() {
           </Link>
         </motion.div>
       </div>
+
+      {/* Floating Sync Toast Notification */}
+      {syncToast && (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 30 }}
+          className="fixed bottom-6 inset-x-4 z-50 mx-auto max-w-sm rounded-2xl bg-stone-900/95 px-4 py-3 text-center text-xs font-medium text-white shadow-xl backdrop-blur-md dark:bg-[#d9a441] dark:text-stone-950"
+        >
+          {syncToast}
+        </motion.div>
+      )}
     </div>
   );
 }

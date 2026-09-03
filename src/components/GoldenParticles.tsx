@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 
 type ThemeMode = 'light' | 'dark';
 
@@ -70,7 +70,7 @@ export default function GoldenParticles({ theme }: { theme: ThemeMode }) {
               animationDelay: `${mote.delay}s`,
               filter: 'blur(0.2px)',
               '--drift': `${mote.drift}px`,
-            } as React.CSSProperties}
+            } as CSSProperties}
           />
         ))}
 
@@ -90,7 +90,7 @@ export default function GoldenParticles({ theme }: { theme: ThemeMode }) {
               boxShadow: '0 0 10px rgba(255,224,150,0.8)',
               animation: `particle-twinkle ${firefly.duration}s ease-in-out infinite`,
               animationDelay: `${firefly.delay}s`,
-            } as React.CSSProperties}
+            } as CSSProperties}
           />
         ))}
       </div>

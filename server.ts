@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { apiRouter } from './src/api.js';
 
@@ -7,6 +8,11 @@ async function startServer() {
   const app = express();
   const port = Number(process.env.PORT) || 3000;
 
+  app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
   app.use(express.json({ limit: "10mb" }));
 
   // Mount backend API routes
